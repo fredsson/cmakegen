@@ -7,13 +7,20 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build Configuration")
 endif(NOT CMAKE_BUILD_TYPE)
 
-set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic)
+set(CMAKE_CXX_CLANG_TIDY
+  clang-tidy
+  -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-implicit-bool-conversion
+)
 
 add_library(stdc++fs UNKNOWN IMPORTED)
 set_property(TARGET stdc++fs PROPERTY IMPORTED_LOCATION "/usr/lib/libstdc++fs.a")
 
 set(SRC_FILES
   "src/impl/cmdoptionparser.cpp"
+  "src/file_utils/impl/ignorefile.cpp"
+  "src/file_utils/impl/cmakedirectoryentry.cpp"
+  "src/file_utils/impl/fileutils.cpp"
+  "src/impl/cmakegenerator.cpp"
   "src/main.cpp"
 )
 
@@ -21,6 +28,7 @@ add_executable(cmakegen ${SRC_FILES})
 
 target_compile_features(cmakegen PRIVATE cxx_std_17)
 target_compile_options(cmakegen PRIVATE -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Werror)
+target_link_libraries(cmakegen stdc++fs)
 
 install(
   TARGETS cmakegen
