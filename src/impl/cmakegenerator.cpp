@@ -4,7 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <set>
-
+#include <iostream>
 namespace {
 std::string lowercase(std::string subject) {
   std::transform(subject.begin(), subject.end(), subject.begin(), ::tolower);
@@ -75,6 +75,8 @@ void CmakeGenerator::run() {
 
   placeInitialCmakeFiles();
 
+  populateCmakeFiles();
+
 }
 
 void CmakeGenerator::placeInitialCmakeFiles() {
@@ -91,7 +93,7 @@ void CmakeGenerator::placeInitialCmakeFiles() {
     allowedDirectories.push_back(directory.path_);
     ss << allowedDirectories.size() << " " << file_utils::makeRelative(directory.path_) << "\n";
   }
-  ss << "==> Folders to create CMakeLists.txt in (ex: (N)one, 1 2 3 or 1-3)\n";
+  ss << "==> Folders to create CMakeLists.txt in (ex: (N)one, 1 2 3 or 1-3)";
   ioHandler_.write(ss.str());
 
   bool hasSelectedFiles = false;
@@ -115,5 +117,18 @@ void CmakeGenerator::placeInitialCmakeFiles() {
   for (const auto& index : indices) {
     std::ofstream file(allowedDirectories[index] + "/CMakeLists.txt");
     file.close();
+  }
+}
+
+void CmakeGenerator::populateCmakeFiles() {
+  const auto cmakeFiles = file_utils::getCmakeDirectories(ignoreFile_);
+  for (const auto& file : cmakeFiles) {
+    std::cout << "file: " << file.path_ << "\n";
+    for (const auto& inc : file.includeFiles_) {
+      std::cout << "incFile: " << inc << "\n";
+    }
+    for (const auto& src : file.sourceFiles_) {
+      std::cout << "srcFile: " << src << "\n";
+    }
   }
 }

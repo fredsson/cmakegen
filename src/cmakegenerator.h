@@ -19,6 +19,7 @@ public:
   void run();
 private:
   void placeInitialCmakeFiles();
+  void populateCmakeFiles();
 
   IoHandler& ioHandler_;
   const file_utils::IgnoreFile& ignoreFile_;
