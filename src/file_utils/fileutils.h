@@ -24,6 +24,8 @@ struct CmakeDirectory {
 };
 
 std::string makeRelative(const std::string& target);
+
+std::vector<CmakeDirectory> getCmakeDirectories(const IgnoreFile& ignoreFile);
 std::vector<CmakeDirectory> getPossibleCmakeDirectories(const IgnoreFile& ignoreFile);
 
 }
