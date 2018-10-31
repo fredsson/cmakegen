@@ -14,15 +14,39 @@ namespace {
 const std::vector<std::string> HEADER_EXTENSIONS = {".h", ".hpp", ".hh"};
 const std::vector<std::string> SOURCE_EXTENSIONS = {".c", ".cpp", ".c++"};
 
-// should return a root cmake with children
-// no directories
-void walkDirectory(const filesystem::path& path, const IgnoreFile& ignoreFile) {
-  // check all files in path (directory)
-  // if contains cmake file
-    // create cmake file with files in dir
-    // if directory walk it with cmake file as parent/active cmake file
-  // if parent cmake file and contains cmake file
-    // create new cmake file and add as child of parent
+struct Directory {
+  std::string path_;
+  std::vector<std::string> includeFiles_;
+  std::vector<std::string> sourceFiles_;
+  bool hasCmakeFile_;
+  std::shared_ptr<Directory> parent_;
+  std::vector<std::shared_ptr<Directory>> children_;
+};
+
+
+std::shared_ptr<Directory> walkDirectory(const filesystem::path& path, const IgnoreFile& ignoreFile, std::shared_ptr<Directory> parent) {
+
+  std::shared_ptr<Directory> currentDirectory = std::make_shared<Directory>();
+  currentDirectory->parent_ = parent;
+  currentDirectory->path_ = path.generic_string();
+
+  for (const auto& entry : filesystem::directory_iterator(path)) {
+    if (entry.status().type() == filesystem::file_type::directory) {
+      currentDirectory->children_.push_back(walkDirectory(entry.path(), ignoreFile, currentDirectory));
+      continue;
+    }
+
+    const auto path = entry.path().generic_string();
+    if (hasExtension(path, HEADER_EXTENSIONS)) {
+      currentDirectory->includeFiles_.push_back(path);
+    } else if (hasExtension(path, SOURCE_EXTENSIONS)) {
+      currentDirectory->sourceFiles_.push_back(path);
+    } else if (path.find("CMakeLists.txt") != std::string::npos) {
+      currentDirectory->hasCmakeFile_ = true;
+    }
+  }
+
+  return currentDirectory;
 }
 
 void walkDirectory(
