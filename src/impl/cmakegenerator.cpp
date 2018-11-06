@@ -1,5 +1,6 @@
 #include "../cmakegenerator.h"
 #include "../file_utils/fileutils.h"
+#include "../file_utils/directory.h"
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -73,26 +74,32 @@ void CmakeGenerator::run() {
   ioHandler_.write("Welcome to cmakgen\n");
   ioHandler_.write("This tool will guide you through the process of configuring all the CMakeLists.txt files needed for your project\n");
 
-  placeInitialCmakeFiles();
+  auto directoryRoot = file_utils::getDirectories(ignoreFile_);
+
+  const auto cmakeDirectories = directoryRoot->filter([](const file_utils::Directory& directory){
+    return directory.hasCmakeFile();
+  });
+  if (!cmakeDirectories.empty()) {
+    ioHandler_.write("Found CMakeLists.txt files in the project, please use -b instead to update them.");
+    return;
+  }
+
+  placeInitialCmakeFiles(directoryRoot);
 
   populateCmakeFiles();
 
 }
 
-void CmakeGenerator::placeInitialCmakeFiles() {
-  const auto directories = file_utils::getPossibleCmakeDirectories(ignoreFile_);
-
+void CmakeGenerator::placeInitialCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot) {
   std::stringstream ss;
   ss << "Found the following folders, please specify which should be considered projects (contain CMakeLists.txt):\n";
-  std::vector<std::string> allowedDirectories = {};
-  for (const auto& directory : directories) {
-    if (directory.cmakeFile_) {
-      continue;
-    }
 
-    allowedDirectories.push_back(directory.path_);
-    ss << allowedDirectories.size() << " " << file_utils::makeRelative(directory.path_) << "\n";
-  }
+  std::vector<file_utils::Directory*> allowedDirectories = {};
+  directoryRoot->forEach([&allowedDirectories, &ss](file_utils::Directory& directory){
+    allowedDirectories.push_back(&directory);
+    ss << allowedDirectories.size() << " " << file_utils::makeRelative(directory.path()) << "\n";
+  });
+
   ss << "==> Folders to create CMakeLists.txt in (ex: (N)one, 1 2 3 or 1-3)";
   ioHandler_.write(ss.str());
 
@@ -115,20 +122,11 @@ void CmakeGenerator::placeInitialCmakeFiles() {
   }
 
   for (const auto& index : indices) {
-    std::ofstream file(allowedDirectories[index] + "/CMakeLists.txt");
+    allowedDirectories[index]->addCmakeFile();
+    std::ofstream file(allowedDirectories[index]->path() + "/CMakeLists.txt");
     file.close();
   }
 }
 
 void CmakeGenerator::populateCmakeFiles() {
-  const auto cmakeFiles = file_utils::getCmakeDirectories(ignoreFile_);
-  for (const auto& file : cmakeFiles) {
-    std::cout << "file: " << file.path_ << "\n";
-    for (const auto& inc : file.includeFiles_) {
-      std::cout << "incFile: " << inc << "\n";
-    }
-    for (const auto& src : file.sourceFiles_) {
-      std::cout << "srcFile: " << src << "\n";
-    }
-  }
 }

@@ -1,9 +1,11 @@
 #ifndef CMAKEGENERATOR_H
 #define CMAKEGENERATOR_H
+#include <memory>
 #include <string>
 
 namespace file_utils {
 class IgnoreFile;
+class Directory;
 }
 
 class IoHandler {
@@ -18,7 +20,7 @@ public:
   CmakeGenerator(IoHandler& iohandler, const file_utils::IgnoreFile& ignoreFile);
   void run();
 private:
-  void placeInitialCmakeFiles();
+  void placeInitialCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot);
   void populateCmakeFiles();
 
   IoHandler& ioHandler_;
