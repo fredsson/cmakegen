@@ -17,8 +17,8 @@ set_property(TARGET stdc++fs PROPERTY IMPORTED_LOCATION "/usr/lib/libstdc++fs.a"
 
 set(SRC_FILES
   "src/impl/cmdoptionparser.cpp"
+  "src/file_utils/impl/directory.cpp"
   "src/file_utils/impl/ignorefile.cpp"
-  "src/file_utils/impl/cmakedirectoryentry.cpp"
   "src/file_utils/impl/fileutils.cpp"
   "src/impl/cmakegenerator.cpp"
   "src/main.cpp"
