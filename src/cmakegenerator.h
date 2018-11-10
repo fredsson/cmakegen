@@ -17,12 +17,19 @@ public:
 
 class CmakeGenerator {
 public:
-  CmakeGenerator(IoHandler& iohandler, const file_utils::IgnoreFile& ignoreFile);
+  CmakeGenerator(
+    IoHandler& iohandler,
+    const file_utils::IgnoreFile& ignoreFile,
+    const std::string& cmakeVersion,
+    const std::string& cppVersion
+  );
   void run();
 private:
   void placeInitialCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot);
-  void populateCmakeFiles();
+  void populateCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot);
 
+  std::string defaultCmakeVersion_;
+  std::string defaultCppVersion_;
   IoHandler& ioHandler_;
   const file_utils::IgnoreFile& ignoreFile_;
 };

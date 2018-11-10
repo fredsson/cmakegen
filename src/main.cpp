@@ -19,7 +19,7 @@ public:
 void generateCmakeFiles(const std::string& cmakeVersion, const std::string& cppVersion, const file_utils::IgnoreFile& ignoreFile) {
   std::cout << "generating with cmake: " << cmakeVersion << " and cpp: " << cppVersion << "\n";
   auto ioHandler = StdIoHandler();
-  CmakeGenerator generator(ioHandler, ignoreFile);
+  CmakeGenerator generator(ioHandler, ignoreFile, cmakeVersion, cppVersion);
   generator.run();
 }
 

@@ -1,11 +1,12 @@
 #include "../cmakegenerator.h"
 #include "../file_utils/fileutils.h"
 #include "../file_utils/directory.h"
+#include "../cmake/cmakefile.h"
+
 #include <sstream>
 #include <fstream>
 #include <algorithm>
 #include <set>
-#include <iostream>
 namespace {
 std::string lowercase(std::string subject) {
   std::transform(subject.begin(), subject.end(), subject.begin(), ::tolower);
@@ -64,10 +65,18 @@ bool parseCmakeFileList(const std::string& input, const int maxAllowedIndex, std
   return true;
 }
 
+std::string getOptionalInput(const std::string& input, const std::string& defaultValue) {
+  return input.empty() ? defaultValue : input;
 }
 
-CmakeGenerator::CmakeGenerator(IoHandler& iohandler, const file_utils::IgnoreFile& ignoreFile)
-  : ioHandler_(iohandler), ignoreFile_(ignoreFile) {
+}
+
+CmakeGenerator::CmakeGenerator(
+  IoHandler& iohandler,
+  const file_utils::IgnoreFile& ignoreFile,
+  const std::string& cmakeVersion,
+  const std::string& cppVersion
+): defaultCmakeVersion_(cmakeVersion), defaultCppVersion_(cppVersion), ioHandler_(iohandler),  ignoreFile_(ignoreFile) {
 }
 
 void CmakeGenerator::run() {
@@ -86,7 +95,7 @@ void CmakeGenerator::run() {
 
   placeInitialCmakeFiles(directoryRoot);
 
-  populateCmakeFiles();
+  populateCmakeFiles(directoryRoot);
 
 }
 
@@ -128,5 +137,29 @@ void CmakeGenerator::placeInitialCmakeFiles(const std::shared_ptr<file_utils::Di
   }
 }
 
-void CmakeGenerator::populateCmakeFiles() {
+void CmakeGenerator::populateCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot) {
+  directoryRoot->hasCmakeFile();
+  ioHandler_.write("CMake version? (" + defaultCmakeVersion_ + ")");
+  const auto cmakeVersion = getOptionalInput(ioHandler_.input(), defaultCmakeVersion_);
+
+  ioHandler_.write("C++ version? (" + defaultCppVersion_ + ")");
+  const auto cppVersion = getOptionalInput(ioHandler_.input(), defaultCppVersion_);
+
+  const auto versionFunction = cmake::CmakeFunction::create("cmake_minimum_required", {{ cmakeVersion, false }});
+
+  const auto cmakeFiles = directoryRoot->filter([](const file_utils::Directory& directory){
+    return directory.hasCmakeFile();
+  });
+
+
+  //const auto cppFunction = cmake::CmakeFunction::create("target_compile_features", {{"PRIVATE", false}, { cppVersion, false }});
+
+
+  auto rootCmakeFile = std::make_shared<cmake::CmakeFile>(directoryRoot->path());
+
+    //stream << "cmake_minimum_required(VERSION " << getOptionalInput(ioHandler.input(), cmakeVersion) << ")\n\n";
+  // for each directory with cmake file
+    // set project name / cmake version / cpp version
+    // get all files from sub folders
+    // add sub directories (with cmake files)
 }
