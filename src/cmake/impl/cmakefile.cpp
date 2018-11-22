@@ -58,4 +58,8 @@ void CmakeFile::addFiles(const std::vector<std::string>& includeFiles, const std
   });
 }
 
+void CmakeFile::addFunction(const std::shared_ptr<CmakeFunction>& func) {
+  functions_.push_back(func);
+}
+
 }

@@ -54,6 +54,11 @@ std::string makeRelative(const std::string& target) {
   return "." + target.substr(currentPath.size());
 }
 
+std::string directoryName(const std::string& path) {
+  auto filePath = filesystem::path(path);
+  return filePath.filename();
+}
+
 std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
   return walkDirectory(filesystem::current_path(), ignoreFile, nullptr);
 }

@@ -7,6 +7,8 @@
 #include <fstream>
 #include <algorithm>
 #include <set>
+#include <queue>
+
 namespace {
 std::string lowercase(std::string subject) {
   std::transform(subject.begin(), subject.end(), subject.begin(), ::tolower);
@@ -147,9 +149,35 @@ void CmakeGenerator::populateCmakeFiles(const std::shared_ptr<file_utils::Direct
 
   const auto versionFunction = cmake::CmakeFunction::create("cmake_minimum_required", {{ cmakeVersion, false }});
 
-  const auto cmakeFiles = directoryRoot->filter([](const file_utils::Directory& directory){
+  const auto cmakeDirectories = directoryRoot->filter([](const file_utils::Directory& directory){
     return directory.hasCmakeFile();
   });
+
+  for (const auto& directory : cmakeDirectories) {
+    auto cmakeFile = std::make_shared<cmake::CmakeFile>(directory->path());
+
+    const auto projectName = file_utils::directoryName(directory->path());
+
+    cmakeFile->addFunction(versionFunction);
+
+    cmakeFile->addFunction(cmake::CmakeFunction::create("project", {{ projectName, false }, {"VERSION", false}, {"0.0.1", false}, {"LANGUAGES", false}, {"CXX", false}}));
+
+    std::vector<std::shared_ptr<cmake::CmakeFunction>> subDirectories = {};
+    for (const auto* child : directory->children()) {
+      if (child->hasCmakeFile()) {
+        subDirectories.push_back(cmake::CmakeFunction::create("add_subdirectory", {{ file_utils::directoryName(child->path()), false }}));
+        continue;
+      }
+
+      child->forEach([](const auto& subDir) {
+        // if has cmake file add subdirectory 
+        // collect all include files / src files
+      });
+    }
+
+    cmakeFile->addFunction(cmake::CmakeFunction::create(""));
+
+  }
 
 
   //const auto cppFunction = cmake::CmakeFunction::create("target_compile_features", {{"PRIVATE", false}, { cppVersion, false }});
