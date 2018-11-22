@@ -33,12 +33,14 @@ public:
 
   void addChild(const std::shared_ptr<CmakeFile>& child);
   void addFiles(const std::vector<std::string>& includeFiles, const std::vector<std::string>& sourceFiles);
+  void addFunction(const std::shared_ptr<CmakeFunction>& func);
 
 private:
   std::string path_;
   std::vector<std::shared_ptr<CmakeFile>> children_;
   std::vector<std::string> includeFiles_;
   std::vector<std::string> sourceFiles_;
+  std::vector<std::shared_ptr<CmakeFunction>> functions_;
 };
 
 }

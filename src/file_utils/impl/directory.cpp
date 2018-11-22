@@ -15,6 +15,15 @@ bool Directory::hasCmakeFile() const {
   return hasCmakeFile_;
 }
 
+const std::vector<Directory*> Directory::children() const {
+  std::vector<Directory*> result = {};
+  std::transform(children_.begin(), children_.end(), std::back_inserter(result), [](const auto& child){
+    return child.get();
+  });
+
+  return result;
+}
+
 void Directory::addChild(const std::shared_ptr<Directory>& child) {
   children_.push_back(child);
 }
@@ -31,8 +40,8 @@ void Directory::addSourceFile(const std::string& file) {
   sourceFiles_.push_back(file);
 }
 
-void Directory::forEach(std::function<void(Directory& directory)> callback) {
-  std::queue<Directory*> childrenToCheck = {};
+void Directory::forEach(std::function<void(const Directory& directory)> callback) const {
+  std::queue<const Directory*> childrenToCheck = {};
   childrenToCheck.push(this);
 
   while(!childrenToCheck.empty()) {
