@@ -27,6 +27,7 @@ public:
 private:
   void placeInitialCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot);
   void populateCmakeFiles(const std::shared_ptr<file_utils::Directory>& directoryRoot);
+  void populateCmakeFile(const file_utils::Directory* directory, const std::string& cmakeVersion, const std::string& cppVersion);
 
   std::string defaultCmakeVersion_;
   std::string defaultCppVersion_;
