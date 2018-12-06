@@ -7,8 +7,10 @@
 namespace cmake {
 
 struct CmakeFunctionArgument {
-  std::string value;
-  bool quoted;
+  CmakeFunctionArgument(std::string value);
+  CmakeFunctionArgument(std::string value, bool quoted);
+  std::string value_;
+  bool quoted_;
 };
 
 class CmakeFunction {
@@ -16,6 +18,7 @@ public:
   static std::shared_ptr<CmakeFunction> create(const std::string& name, const std::vector<CmakeFunctionArgument>& arguments);
 
   const std::string& name() const;
+  const std::string argumentString() const;
   const CmakeFunctionArgument* argumentByPosition(unsigned int position) const;
 
 private:
@@ -34,6 +37,7 @@ public:
   void addChild(const std::shared_ptr<CmakeFile>& child);
   void addFiles(const std::vector<std::string>& includeFiles, const std::vector<std::string>& sourceFiles);
   void addFunction(const std::shared_ptr<CmakeFunction>& func);
+  void write();
 
 private:
   std::string path_;

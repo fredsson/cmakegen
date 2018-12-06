@@ -7,8 +7,6 @@
 #include <functional>
 #include <queue>
 
-#include <iostream>
-
 namespace filesystem = std::experimental::filesystem;
 
 namespace file_utils {
@@ -28,18 +26,21 @@ std::shared_ptr<Directory> walkDirectory(const filesystem::path& rootPath, const
   std::shared_ptr<Directory> currentDirectory = std::make_shared<Directory>(rootPath.generic_string(), parent);
 
   for (const auto& entry : filesystem::directory_iterator(rootPath)) {
+    const auto& path = entry.path().generic_string();
+    if (ignoreFile.contains(path)) {
+      continue;
+    }
+
     if (entry.status().type() == filesystem::file_type::directory) {
       currentDirectory->addChild(walkDirectory(entry.path(), ignoreFile, currentDirectory));
       continue;
     }
 
-    const auto path = entry.path().generic_string();
     if (hasExtension(path, HEADER_EXTENSIONS)) {
       currentDirectory->addIncludeFile(path);
     } else if (hasExtension(path, SOURCE_EXTENSIONS)) {
       currentDirectory->addSourceFile(path);
     } else if (path.find("CMakeLists.txt") != std::string::npos) {
-      std::cout << "found cmake file in " << path << "\n";
       currentDirectory->addCmakeFile();
     }
   }
@@ -52,6 +53,10 @@ std::shared_ptr<Directory> walkDirectory(const filesystem::path& rootPath, const
 std::string makeRelative(const std::string& target) {
   const auto currentPath = filesystem::current_path().generic_string();
   return "." + target.substr(currentPath.size());
+}
+
+std::string makeRelative(const std::string& target, const std::string& rootPath) {
+  return "." + target.substr(rootPath.size());
 }
 
 std::string directoryName(const std::string& path) {

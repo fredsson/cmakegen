@@ -24,6 +24,14 @@ const std::vector<Directory*> Directory::children() const {
   return result;
 }
 
+const std::vector<std::string>& Directory::includeFiles() const {
+  return includeFiles_;
+}
+
+const std::vector<std::string>& Directory::sourceFiles() const {
+  return sourceFiles_;
+}
+
 void Directory::addChild(const std::shared_ptr<Directory>& child) {
   children_.push_back(child);
 }
@@ -42,6 +50,46 @@ void Directory::addSourceFile(const std::string& file) {
 
 void Directory::forEach(std::function<void(const Directory& directory)> callback) const {
   std::queue<const Directory*> childrenToCheck = {};
+  childrenToCheck.push(this);
+
+  while(!childrenToCheck.empty()) {
+    auto& directory = childrenToCheck.front();
+    childrenToCheck.pop();
+
+    callback(*directory);
+
+    for(auto& child : directory->children_) {
+      childrenToCheck.push(child.get());
+    }
+  }
+}
+
+void Directory::forEachIf(std::function<void(
+  const Directory& directory)> callback,
+  std::function<bool(const Directory& directory)> predicate
+) const {
+  std::queue<const Directory*> childrenToCheck = {};
+  childrenToCheck.push(this);
+
+  while(!childrenToCheck.empty()) {
+    auto& directory = childrenToCheck.front();
+    childrenToCheck.pop();
+
+    if (!predicate(*directory)) {
+      continue;
+    }
+
+    callback(*directory);
+
+    for(auto& child : directory->children_) {
+      childrenToCheck.push(child.get());
+    }
+
+  }
+}
+
+void Directory::forEach(std::function<void(Directory& directory)> callback) {
+  std::queue<Directory*> childrenToCheck = {};
   childrenToCheck.push(this);
 
   while(!childrenToCheck.empty()) {

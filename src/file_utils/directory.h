@@ -15,12 +15,16 @@ public:
 
   bool hasCmakeFile() const;
   const std::vector<Directory*> children() const;
+  const std::vector<std::string>& includeFiles() const;
+  const std::vector<std::string>& sourceFiles() const;
 
   void addChild(const std::shared_ptr<Directory>& child);
   void addCmakeFile();
   void addIncludeFile(const std::string& file);
   void addSourceFile(const std::string& file);
   void forEach(std::function<void(const Directory& directory)> callback) const;
+  void forEachIf(std::function<void(const Directory& directory)> callback, std::function<bool(const Directory& directory)> predicate) const;
+  void forEach(std::function<void(Directory& directory)> callback);
   std::vector<Directory*> filter(std::function<bool(const Directory& directory)> predicate);
 private:
   std::string path_;

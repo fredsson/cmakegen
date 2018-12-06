@@ -10,6 +10,7 @@
 #include <queue>
 
 namespace {
+
 std::string lowercase(std::string subject) {
   std::transform(subject.begin(), subject.end(), subject.begin(), ::tolower);
   return subject;
@@ -69,6 +70,86 @@ bool parseCmakeFileList(const std::string& input, const int maxAllowedIndex, std
 
 std::string getOptionalInput(const std::string& input, const std::string& defaultValue) {
   return input.empty() ? defaultValue : input;
+}
+
+std::string getProjectType(IoHandler& ioHandler) {
+  auto input = lowercase(ioHandler.input());
+  while (input != "lib" && input != "exe") {
+    input = input = lowercase(ioHandler.input());
+  }
+
+  return input;
+}
+
+std::vector<const file_utils::Directory*> getSubDirectoriesForProject(const file_utils::Directory* directory) {
+  std::vector<const file_utils::Directory*> subDirectories = {};
+  directory->forEach([&subDirectories, directory](const file_utils::Directory& dir) {
+    if (dir.path() != directory->path() && dir.hasCmakeFile()) {
+      subDirectories.push_back(&dir);
+    }
+  });
+
+  return subDirectories;
+}
+
+class DirectoryFiles {
+public:
+  bool empty() const {
+    return includeFiles.empty() && sourceFiles.empty();
+  }
+  std::vector<cmake::CmakeFunctionArgument> availableFileTypeArguments(const std::string& projectName) const {
+    std::vector<cmake::CmakeFunctionArgument> arguments = {projectName};
+    if (!includeFiles.empty()) {
+      arguments.push_back({"${INCLUDE_FILES}"});
+    }
+
+    if (!sourceFiles.empty()) {
+      arguments.push_back({"${SRC_FILES}"});
+    }
+
+    return arguments;
+  }
+
+  std::shared_ptr<cmake::CmakeFunction> createIncludeFilesFunction(const file_utils::Directory* directory) {
+    std::vector<cmake::CmakeFunctionArgument> arguments = {{"INCLUDE_FILES"}};
+    std::transform(includeFiles.begin(), includeFiles.end(), std::back_inserter(arguments), [&directory](const std::string& file) {
+      return cmake::CmakeFunctionArgument{file_utils::makeRelative(file, directory->path()), true};
+    });
+
+    return cmake::CmakeFunction::create("set", arguments);
+  }
+
+  std::shared_ptr<cmake::CmakeFunction> createSourceFilesFunction(const file_utils::Directory* directory) {
+    std::vector<cmake::CmakeFunctionArgument> arguments = {{"SRC_FILES"}};
+    std::transform(sourceFiles.begin(), sourceFiles.end(), std::back_inserter(arguments), [&directory](const std::string& file) {
+      return cmake::CmakeFunctionArgument{file_utils::makeRelative(file, directory->path()), true};
+    });
+
+    return cmake::CmakeFunction::create("set", arguments);
+  }
+
+  std::vector<std::string> includeFiles;
+  std::vector<std::string> sourceFiles;
+};
+
+DirectoryFiles getFilesForProject(const file_utils::Directory* directory) {
+
+  DirectoryFiles files;
+
+  std::copy(directory->includeFiles().begin(), directory->includeFiles().end(), std::back_inserter(files.includeFiles));
+  std::copy(directory->sourceFiles().begin(), directory->sourceFiles().end(), std::back_inserter(files.sourceFiles));
+
+  directory->forEachIf(
+    [&files](const file_utils::Directory& dir) {
+      std::copy(dir.includeFiles().begin(), dir.includeFiles().end(), std::back_inserter(files.includeFiles));
+      std::copy(dir.sourceFiles().begin(), dir.sourceFiles().end(), std::back_inserter(files.sourceFiles));
+    },
+    [&directory](const file_utils::Directory& dir) {
+      return dir.path() == directory->path() || !dir.hasCmakeFile();
+    }
+  );
+
+  return files;
 }
 
 }
@@ -147,47 +228,72 @@ void CmakeGenerator::populateCmakeFiles(const std::shared_ptr<file_utils::Direct
   ioHandler_.write("C++ version? (" + defaultCppVersion_ + ")");
   const auto cppVersion = getOptionalInput(ioHandler_.input(), defaultCppVersion_);
 
-  const auto versionFunction = cmake::CmakeFunction::create("cmake_minimum_required", {{ cmakeVersion, false }});
-
   const auto cmakeDirectories = directoryRoot->filter([](const file_utils::Directory& directory){
     return directory.hasCmakeFile();
   });
 
-  for (const auto& directory : cmakeDirectories) {
-    auto cmakeFile = std::make_shared<cmake::CmakeFile>(directory->path());
+  for (const auto* directory : cmakeDirectories) {
+    populateCmakeFile(directory, cmakeVersion, cppVersion);
+  }
+}
 
-    const auto projectName = file_utils::directoryName(directory->path());
+void CmakeGenerator::populateCmakeFile(
+  const file_utils::Directory* directory,
+  const std::string& cmakeVersion,
+  const std::string& cppVersion
+) {
+  auto cmakeFile = std::make_shared<cmake::CmakeFile>(directory->path());
 
-    cmakeFile->addFunction(versionFunction);
+  const auto projectName = file_utils::directoryName(directory->path());
 
-    cmakeFile->addFunction(cmake::CmakeFunction::create("project", {{ projectName, false }, {"VERSION", false}, {"0.0.1", false}, {"LANGUAGES", false}, {"CXX", false}}));
+  cmakeFile->addFunction(cmake::CmakeFunction::create("cmake_minimum_required", {
+    {"VERSION"},
+    {cmakeVersion}
+  }));
 
-    std::vector<std::shared_ptr<cmake::CmakeFunction>> subDirectories = {};
-    for (const auto* child : directory->children()) {
-      if (child->hasCmakeFile()) {
-        subDirectories.push_back(cmake::CmakeFunction::create("add_subdirectory", {{ file_utils::directoryName(child->path()), false }}));
-        continue;
-      }
+  cmakeFile->addFunction(cmake::CmakeFunction::create("project", {
+    {projectName},
+    {"VERSION"},
+    {"1.0.0"},
+    {"LANGUAGES"},
+    {"CXX"}
+  }));
 
-      child->forEach([](const auto& subDir) {
-        // if has cmake file add subdirectory 
-        // collect all include files / src files
-      });
-    }
-
-    cmakeFile->addFunction(cmake::CmakeFunction::create(""));
-
+  const auto subDirectories = getSubDirectoriesForProject(directory);
+  for (const auto* subDirectory : subDirectories) {
+    cmakeFile->addFunction(cmake::CmakeFunction::create("add_subdirectory", {
+      {file_utils::directoryName(subDirectory->path())}
+    }));
   }
 
+  auto files = getFilesForProject(directory);
+  if (!files.empty()) {
+    cmakeFile->addFunction(files.createIncludeFilesFunction(directory));
+    cmakeFile->addFunction(files.createSourceFilesFunction(directory));
 
-  //const auto cppFunction = cmake::CmakeFunction::create("target_compile_features", {{"PRIVATE", false}, { cppVersion, false }});
+    ioHandler_.write("Found source files for " + projectName + " what should the project type be? (lib/exe)");
+    const auto projectType = getProjectType(ioHandler_).find("lib") != std::string::npos ? "add_library" : "add_executable";
+    cmakeFile->addFunction(cmake::CmakeFunction::create(projectType,
+      files.availableFileTypeArguments(projectName)
+    ));
 
+    cmakeFile->addFunction(cmake::CmakeFunction::create("target_compile_features", {
+      {projectName},
+      {"PRIVATE"},
+      {cppVersion}
+    }));
 
-  auto rootCmakeFile = std::make_shared<cmake::CmakeFile>(directoryRoot->path());
+    cmakeFile->addFunction(cmake::CmakeFunction::create("target_compile_options", {
+      {projectName},
+      {"PRIVATE"},
+      {"-Wall"},
+      {"-Wextra"},
+      {"-Wshadow"},
+      {"-Wnon-virtual-dtor"},
+      {"-pedantic"},
+      {"-Werror"},
+    }));
+  }
 
-    //stream << "cmake_minimum_required(VERSION " << getOptionalInput(ioHandler.input(), cmakeVersion) << ")\n\n";
-  // for each directory with cmake file
-    // set project name / cmake version / cpp version
-    // get all files from sub folders
-    // add sub directories (with cmake files)
+  cmakeFile->write();
 }
