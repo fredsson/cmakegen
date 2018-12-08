@@ -51,8 +51,7 @@ std::shared_ptr<Directory> walkDirectory(const filesystem::path& rootPath, const
 }
 
 std::string makeRelative(const std::string& target) {
-  const auto currentPath = filesystem::current_path().generic_string();
-  return "." + target.substr(currentPath.size());
+  return makeRelative(target, filesystem::current_path().generic_string());
 }
 
 std::string makeRelative(const std::string& target, const std::string& rootPath) {
