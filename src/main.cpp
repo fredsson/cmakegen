@@ -2,6 +2,8 @@
 #include "cmdoptionparser.h"
 #include "cmakegenerator.h"
 #include "file_utils/ignorefile.h"
+#include "cmake/cmakefile.h"
+#include "projectbuilder.h"
 
 class StdIoHandler : public IoHandler {
 public:
@@ -17,10 +19,14 @@ public:
 };
 
 void generateCmakeFiles(const std::string& cmakeVersion, const std::string& cppVersion, const file_utils::IgnoreFile& ignoreFile) {
-  std::cout << "generating with cmake: " << cmakeVersion << " and cpp: " << cppVersion << "\n";
   auto ioHandler = StdIoHandler();
   CmakeGenerator generator(ioHandler, ignoreFile, cmakeVersion, cppVersion);
   generator.run();
+}
+
+void updateCmakeFiles(const file_utils::IgnoreFile& ignoreFile) {
+  ProjectBuilder builder(ignoreFile);
+  builder.run();
 }
 
 int main(int argc, char *argv[]) {
@@ -42,7 +48,7 @@ int main(int argc, char *argv[]) {
       ignoreFile
     );
   } else if (optionParser.hasAnyOption({ "-b", "--build" })) {
-    std::cout << "building files!\n";
+    updateCmakeFiles(ignoreFile);
   } else {
   }
   return 0;
