@@ -92,66 +92,6 @@ std::vector<const file_utils::Directory*> getSubDirectoriesForProject(const file
   return subDirectories;
 }
 
-class DirectoryFiles {
-public:
-  bool empty() const {
-    return includeFiles.empty() && sourceFiles.empty();
-  }
-  std::vector<cmake::CmakeFunctionArgument> availableFileTypeArguments(const std::string& projectName) const {
-    std::vector<cmake::CmakeFunctionArgument> arguments = {projectName};
-    if (!includeFiles.empty()) {
-      arguments.push_back({"${INCLUDE_FILES}"});
-    }
-
-    if (!sourceFiles.empty()) {
-      arguments.push_back({"${SRC_FILES}"});
-    }
-
-    return arguments;
-  }
-
-  std::shared_ptr<cmake::CmakeFunction> createIncludeFilesFunction(const file_utils::Directory* directory) {
-    std::vector<cmake::CmakeFunctionArgument> arguments = {{"INCLUDE_FILES"}};
-    std::transform(includeFiles.begin(), includeFiles.end(), std::back_inserter(arguments), [&directory](const std::string& file) {
-      return cmake::CmakeFunctionArgument{file_utils::makeRelative(file, directory->path()), true};
-    });
-
-    return cmake::CmakeFunction::create("set", arguments);
-  }
-
-  std::shared_ptr<cmake::CmakeFunction> createSourceFilesFunction(const file_utils::Directory* directory) {
-    std::vector<cmake::CmakeFunctionArgument> arguments = {{"SRC_FILES"}};
-    std::transform(sourceFiles.begin(), sourceFiles.end(), std::back_inserter(arguments), [&directory](const std::string& file) {
-      return cmake::CmakeFunctionArgument{file_utils::makeRelative(file, directory->path()), true};
-    });
-
-    return cmake::CmakeFunction::create("set", arguments);
-  }
-
-  std::vector<std::string> includeFiles;
-  std::vector<std::string> sourceFiles;
-};
-
-DirectoryFiles getFilesForProject(const file_utils::Directory* directory) {
-
-  DirectoryFiles files;
-
-  std::copy(directory->includeFiles().begin(), directory->includeFiles().end(), std::back_inserter(files.includeFiles));
-  std::copy(directory->sourceFiles().begin(), directory->sourceFiles().end(), std::back_inserter(files.sourceFiles));
-
-  directory->forEachIf(
-    [&files](const file_utils::Directory& dir) {
-      std::copy(dir.includeFiles().begin(), dir.includeFiles().end(), std::back_inserter(files.includeFiles));
-      std::copy(dir.sourceFiles().begin(), dir.sourceFiles().end(), std::back_inserter(files.sourceFiles));
-    },
-    [&directory](const file_utils::Directory& dir) {
-      return dir.path() == directory->path() || !dir.hasCmakeFile();
-    }
-  );
-
-  return files;
-}
-
 }
 
 CmakeGenerator::CmakeGenerator(
@@ -266,7 +206,7 @@ void CmakeGenerator::populateCmakeFile(
     }));
   }
 
-  auto files = getFilesForProject(directory);
+  auto files = file_utils::getFilesForProject(directory);
   if (!files.empty()) {
     cmakeFile->addFunction(files.createIncludeFilesFunction(directory));
     cmakeFile->addFunction(files.createSourceFilesFunction(directory));

@@ -1,77 +1,19 @@
 #include "../cmakefile.h"
 #include "cmakescanner.h"
 #include "cmakeformatter.h"
+#include "../../file_utils/fileutils.h"
+#include "../cmakefunctioncriteria.h"
+#include "constants.h"
 
 #include <algorithm>
 #include <fstream>
 #include <sstream>
 
-
 namespace cmake {
 
-CmakeFunctionArgument::CmakeFunctionArgument(std::string value)
-  : value_(value), position_(nullptr), quoted_(false) {
-}
-
-CmakeFunctionArgument::CmakeFunctionArgument(std::string value, bool quoted)
-  : value_(value), position_(nullptr), quoted_(quoted) {
-}
-
-CmakeFunctionArgument::CmakeFunctionArgument(std::string value, const FilePosition position)
-  : value_(value), position_(std::make_shared<FilePosition>(position)), quoted_(false) {
-}
-
-CmakeFunctionArgument::CmakeFunctionArgument(std::string value, const FilePosition position, bool quoted)
-  : value_(value), position_(std::make_shared<FilePosition>(position)), quoted_(quoted) {
-}
-
-std::shared_ptr<CmakeFunction> CmakeFunction::create(
-  const std::string& name,
-  const std::vector<CmakeFunctionArgument>& arguments
-) {
-  return std::shared_ptr<CmakeFunction>(new CmakeFunction(name, arguments, nullptr, nullptr));
-}
-
-std::shared_ptr<CmakeFunction> CmakeFunction::create(
-  const std::string& name,
-  const std::vector<CmakeFunctionArgument>& arguments,
-  const FilePosition startPosition,
-  const FilePosition endPosition
-) {
-  return std::shared_ptr<CmakeFunction>(new CmakeFunction(
-    name,
-    arguments,
-    std::make_unique<FilePosition>(startPosition),
-    std::make_unique<FilePosition>(endPosition)
-  ));
-}
-
-CmakeFunction::CmakeFunction(
-  const std::string& name,
-  const std::vector<CmakeFunctionArgument>& arguments,
-  std::unique_ptr<FilePosition> startPosition,
-  std::unique_ptr<FilePosition> endPosition
-) : name_(name), arguments_(arguments), startPosition_(std::move(startPosition)), endPosition_(std::move(endPosition)) {
-}
-
-bool CmakeFunction::hasPosition() const {
-  return startPosition_ && endPosition_;
-}
-
-const std::string& CmakeFunction::name() const {
-  return name_;
-}
-
-const FilePosition* CmakeFunction::startPosition() const {
-  return startPosition_.get();
-}
-
-const FilePosition* CmakeFunction::endPosition() const {
-  return endPosition_.get();
-}
-
-const std::vector<CmakeFunctionArgument>& CmakeFunction::arguments() const {
-  return arguments_;
+namespace {
+  const unsigned int IncludeFunctionArgumentPosition = 1;
+  const std::string SetSourceFilesArgumentName = "SRC_FILES";
 }
 
 std::shared_ptr<CmakeFile> CmakeFile::parse(const std::string& directoryPath, const std::string& filePath) {
@@ -125,16 +67,16 @@ bool CmakeFile::hasPositions() const {
   return hasPositions_;
 }
 
-void CmakeFile::addFiles(const std::vector<std::string>& includeFiles, const std::vector<std::string>& sourceFiles) {
-  std::transform(includeFiles.begin(), includeFiles.end(), std::back_inserter(includeFiles_), [this](const auto& file) {
-    const auto relativePath = file.substr(path_.size() + 1);
-    return relativePath;
+CmakeFunction* CmakeFile::getFunction(const ICmakeFunctionCriteria& criteria) const {
+  const auto itr = std::find_if(functions_.begin(), functions_.end(), [&criteria](const auto& function) {
+    return criteria.matches(*function);
   });
 
-  std::transform(sourceFiles.begin(), sourceFiles.end(), std::back_inserter(sourceFiles_), [this](const auto& file) {
-    const auto relativePath = file.substr(path_.size() + 1);
-    return relativePath;
-  });
+  if (itr != functions_.end()) {
+    return (*itr).get();
+  }
+
+  return nullptr;
 }
 
 void CmakeFile::addFunction(const std::shared_ptr<CmakeFunction>& func) {
@@ -142,6 +84,53 @@ void CmakeFile::addFunction(const std::shared_ptr<CmakeFunction>& func) {
     hasPositions_ = true;
   }
   functions_.push_back(func);
+}
+
+void CmakeFile::replaceIncludeFiles(const std::vector<std::string>& includeFiles) {
+  const auto includeFileCriteria = CmakeSetFileFunctionCriteria(CmakeSetFileFunctionCriteria::IncludeFiles);
+  const auto* includeFileFunction = getFunction(includeFileCriteria);
+  if (!includeFileFunction) {
+    addIncludeFunction(includeFiles);
+    return;
+  }
+
+  const int lineOffset = (includeFiles.size() - (includeFileFunction->arguments().size() - 1));
+
+  const auto newFunction = createReplacementFunction(
+    includeFileFunction->name(),
+    constants::SetIncludeFilesArgumentName,
+    *includeFileFunction->startPosition(),
+    includeFiles
+  );
+
+  std::replace_if(functions_.begin(), functions_.end(), [&includeFileCriteria](const auto& function) {
+    return includeFileCriteria.matches(*function);
+  }, newFunction);
+
+  const auto itr = std::find_if(functions_.begin(), functions_.end(), [&includeFileCriteria](const auto& function) {
+    return includeFileCriteria.matches(*function);
+  });
+  moveFunctions(itr + 1, lineOffset);
+}
+
+void CmakeFile::removeIncludeFiles() {
+  const auto* includeFileFunction = getFunction(CmakeSetFileFunctionCriteria(CmakeSetFileFunctionCriteria::IncludeFiles));
+  if (includeFileFunction) {
+    const int noOfArguments = includeFileFunction->arguments().size() - 1;
+    const int functionLength = (includeFileFunction->startPosition()->line_ - includeFileFunction->endPosition()->line_);
+
+    const auto criteria = CmakeSetFileFunctionCriteria(CmakeSetFileFunctionCriteria::IncludeFiles);
+    auto itr = std::find_if(functions_.begin(), functions_.end(), [&criteria](const std::shared_ptr<CmakeFunction>& function) {
+      return criteria.matches(*function);
+    });
+
+    itr = functions_.erase(itr);
+    moveFunctions(itr, functionLength - noOfArguments);
+  }
+
+  const auto* projectFunction = getFunction(CmakeProjectFunctionCriteria());
+  auto* outputFunc = getFunction(CmakeOutputFunctionCriteria(projectFunction->arguments()[0].value_));
+  outputFunc->removeArgument(constants::SetIncludeFilesArgumentName);
 }
 
 void CmakeFile::write() {
@@ -175,6 +164,58 @@ std::shared_ptr<CmakeFunction> CmakeFile::parseFunction(const Token& parentToken
   }
 
   return CmakeFunction::create(parentToken.text, arguments, {parentToken.line, parentToken.column}, {token.line, token.column});
+}
+
+void CmakeFile::addIncludeFunction(const std::vector<std::string>& includeFiles) {
+  const auto srcFileCriteria = CmakeSetFileFunctionCriteria(CmakeSetFileFunctionCriteria::SourceFiles);
+  const auto* srcFileFunction = getFunction(srcFileCriteria);
+
+  const auto includeFunction = createReplacementFunction(
+    srcFileFunction->name(),
+    constants::SetIncludeFilesArgumentName,
+    *srcFileFunction->startPosition(),
+    includeFiles
+  );
+
+  auto itr = std::find_if(functions_.begin(), functions_.end(), [&srcFileCriteria](const auto& func) {
+    return srcFileCriteria.matches(*func);
+  });
+  itr = functions_.insert(itr, includeFunction);
+  moveFunctions(itr + 1, includeFiles.size() + 3);
+
+  const auto* projectFunction = getFunction(CmakeProjectFunctionCriteria());
+  auto* outputFunc = getFunction(CmakeOutputFunctionCriteria(projectFunction->arguments()[0].value_));
+
+  outputFunc->insertArgument(
+    IncludeFunctionArgumentPosition,
+    {constants::SetIncludeFilesArgumentName, {outputFunc->arguments()[0].position_->line_, outputFunc->arguments()[1].position_->column_}}
+  );
+}
+
+void CmakeFile::moveFunctions(std::vector<std::shared_ptr<CmakeFunction>>::iterator startItr, const int lineOffset) {
+  for (auto it = startItr; it != functions_.end(); it++) {
+    (*it)->move(lineOffset);
+  }
+}
+
+std::shared_ptr<CmakeFunction> CmakeFile::createReplacementFunction(
+  const std::string& functionName,
+  const std::string& setArgumentName,
+  const FilePosition& startPosition,
+  const std::vector<std::string>& files
+) {
+  unsigned int line = startPosition.line_ + 1;
+  std::vector<CmakeFunctionArgument> arguments = {{setArgumentName, startPosition, false}};
+  std::transform(files.begin(), files.end(), std::back_inserter(arguments), [this, &line](const auto& file)->CmakeFunctionArgument {
+    return {"\"" + file_utils::makeRelative(file, path_) + "\"", {line++, 3}, true};
+  });
+
+  return CmakeFunction::create(
+    functionName,
+    arguments,
+    startPosition,
+    {line, 0}
+  );
 }
 
 }

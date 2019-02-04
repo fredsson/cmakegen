@@ -17,13 +17,16 @@ set_property(TARGET stdc++fs PROPERTY IMPORTED_LOCATION "/usr/lib/libstdc++fs.a"
 
 set(SRC_FILES
   "src/cmake/impl/cmakescanner.cpp"
+  "src/cmake/impl/cmakefunctioncriteria.cpp"
   "src/cmake/impl/cmakeformatter.cpp"
+  "src/cmake/impl/cmakefunction.cpp"
   "src/cmake/impl/cmakefile.cpp"
   "src/impl/cmdoptionparser.cpp"
   "src/file_utils/impl/directory.cpp"
   "src/file_utils/impl/ignorefile.cpp"
   "src/file_utils/impl/fileutils.cpp"
   "src/impl/cmakegenerator.cpp"
+  "src/impl/projectbuilder.cpp"
   "src/main.cpp"
 )
 
