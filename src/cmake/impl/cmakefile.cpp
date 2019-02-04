@@ -134,7 +134,7 @@ void CmakeFile::removeIncludeFiles() {
 }
 
 void CmakeFile::write() {
-  std::ofstream stream(path_ + "/CMakeLists.txt");
+  std::ofstream stream(path_ + "/" + constants::FileName);
   if (!stream.is_open()) {
     return;
   }

@@ -6,6 +6,7 @@ namespace cmake {
 namespace constants {
 
 const std::string SetIncludeFilesArgumentName = "INCLUDE_FILES";
+const std::string FileName = "CMakeLists.txt";
 
 }
 }
