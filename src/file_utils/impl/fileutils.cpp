@@ -100,6 +100,10 @@ std::string directoryName(const std::string& path) {
   return filePath.filename();
 }
 
+void createDir(const std::string& name) {
+  filesystem::create_directory(filesystem::current_path().append(name));
+}
+
 std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
   return walkDirectory(filesystem::current_path(), ignoreFile, nullptr);
 }

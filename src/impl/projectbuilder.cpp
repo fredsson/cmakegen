@@ -8,6 +8,8 @@
 #include "../cmake/cmakefunctioncriteria.h"
 #include "../cmake/impl/constants.h"
 
+#include <stdlib.h>
+
 namespace {
   bool isSetArgument(const std::string& argument) {
     return argument == cmake::constants::SetIncludeFilesArgumentName || argument == cmake::constants::SetSourceFilesArgumentName;
@@ -101,4 +103,7 @@ void ProjectBuilder::replaceSetFunction(
 }
 
 void ProjectBuilder::build() {
+  file_utils::createDir("_build");
+
+  system("cd _build && cmake ../ && make");
 }

@@ -33,6 +33,7 @@ class IgnoreFile;
 std::string makeRelative(const std::string& target);
 std::string makeRelative(const std::string& target, const std::string& rootPath);
 std::string directoryName(const std::string& path);
+void createDir(const std::string& name);
 std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile);
 DirectoryFiles getFilesForProject(const Directory* directory);
 
