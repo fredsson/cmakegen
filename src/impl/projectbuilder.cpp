@@ -6,11 +6,15 @@
 
 #include "../cmake/cmakefile.h"
 #include "../cmake/cmakefunctioncriteria.h"
+#include "../cmake/impl/constants.h"
 
 namespace {
+  bool isSetArgument(const std::string& argument) {
+    return argument == cmake::constants::SetIncludeFilesArgumentName || argument == cmake::constants::SetSourceFilesArgumentName;
+  }
   bool filesChanged(const std::vector<std::string>& newFiles, const std::vector<cmake::CmakeFunctionArgument>& currentArguments) {
     for (const auto& argument : currentArguments) {
-      if (argument.value_ == "INCLUDE_FILES" || argument.value_ == "SRC_FILES") {
+      if (isSetArgument(argument.value_)) {
         continue;
       }
       for (const auto& file : newFiles) {
@@ -42,7 +46,7 @@ void ProjectBuilder::update() {
   });
 
   for (const auto* cmakeDirectory : cmakeDirectories) {
-    const auto cmakeFile = cmake::CmakeFile::parse(cmakeDirectory->path(), cmakeDirectory->path() + "/CMakeLists.txt");
+    const auto cmakeFile = cmake::CmakeFile::parse(cmakeDirectory->path(), cmakeDirectory->path() + "/" + cmake::constants::FileName);
     auto files = file_utils::getFilesForProject(cmakeDirectory);
 
     if (files.empty()) {
@@ -53,17 +57,10 @@ void ProjectBuilder::update() {
       cmake::CmakeSetFileFunctionCriteria(cmake::CmakeSetFileFunctionCriteria::IncludeFiles)
     );
     if (!files.includeFiles.empty()) {
-      if (!includeFileFunction) {
-        cmakeFile->replaceIncludeFiles(files.includeFiles);
-      } else {
-        const auto includeFilesChanged =
-          (files.includeFiles.size() != includeFileFunction->arguments().size() - 1) ||
-          filesChanged(files.includeFiles, includeFileFunction->arguments());
-        if (includeFilesChanged) {
-          cmakeFile->replaceIncludeFiles(files.includeFiles);
-        }
-      }
-    } else if(includeFileFunction) {
+      replaceSetFunction([&cmakeFile](const std::vector<std::string>& files){
+        cmakeFile->replaceIncludeFiles(files);
+      }, includeFileFunction, files.includeFiles);
+    } else if (includeFileFunction) {
       cmakeFile->removeIncludeFiles();
     }
 
@@ -71,37 +68,35 @@ void ProjectBuilder::update() {
       cmake::CmakeSetFileFunctionCriteria(cmake::CmakeSetFileFunctionCriteria::SourceFiles)
     );
     if (!files.sourceFiles.empty()) {
-      if(!sourceFileFunction) {
-        cmakeFile->replaceSourceFiles(files.sourceFiles);
-      } else {
-        const auto differentSize = files.sourceFiles.size() != sourceFileFunction->arguments().size() - 1;
-        const auto sourceFilesChanged = differentSize || filesChanged(files.sourceFiles, sourceFileFunction->arguments());
-        if (sourceFilesChanged) {
-          cmakeFile->replaceSourceFiles(files.sourceFiles);
-        }
-      }
+      replaceSetFunction([&cmakeFile](const std::vector<std::string>& files){
+        cmakeFile->replaceSourceFiles(files);
+      }, sourceFileFunction, files.sourceFiles);
     }
-    // TODO: what if no cpp files (is this even legal)
 
     cmakeFile->write();
+  }
+}
 
-    // auto* sourceFunction = cmakeFile->sourceFilesFunction();
+void ProjectBuilder::replaceSetFunction(
+  const std::function<void(const std::vector<std::string>&)> replaceFileFunction,
+  const cmake::CmakeFunction* function,
+  const std::vector<std::string>& files
+) {
+  if (!function) {
+    replaceFileFunction(files);
+    return;
+  }
 
+  const auto& arguments = function->arguments();
+  const bool differentSize = files.size() != arguments.size() - 1;
+  if (differentSize) {
+    replaceFileFunction(files);
+    return;
+  }
 
-
-
-
-    /*const auto sourceFilesChanged =
-      (files.sourceFiles.size() != includeFunction->arguments().size() - 1) ||
-      filesChanged(files.sourceFiles, sourceFunction->arguments());*/
-
-    /*if (includeFilesChanged) {
-      cmakeFile->replaceIncludeFiles(files.includeFiles);
-    }*/
-
-    /*if (sourceFilesChanged) {
-      files.replaceSourceFunctionArguments(cmakeDirectory, sourceFunction);
-    }*/
+  const auto differentFiles = filesChanged(files, arguments);
+  if (differentFiles) {
+    replaceFileFunction(files);
   }
 }
 
