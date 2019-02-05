@@ -67,6 +67,22 @@ void ProjectBuilder::update() {
       cmakeFile->removeIncludeFiles();
     }
 
+    const auto* sourceFileFunction = cmakeFile->getFunction(
+      cmake::CmakeSetFileFunctionCriteria(cmake::CmakeSetFileFunctionCriteria::SourceFiles)
+    );
+    if (!files.sourceFiles.empty()) {
+      if(!sourceFileFunction) {
+        cmakeFile->replaceSourceFiles(files.sourceFiles);
+      } else {
+        const auto differentSize = files.sourceFiles.size() != sourceFileFunction->arguments().size() - 1;
+        const auto sourceFilesChanged = differentSize || filesChanged(files.sourceFiles, sourceFileFunction->arguments());
+        if (sourceFilesChanged) {
+          cmakeFile->replaceSourceFiles(files.sourceFiles);
+        }
+      }
+    }
+    // TODO: what if no cpp files (is this even legal)
+
     cmakeFile->write();
 
     // auto* sourceFunction = cmakeFile->sourceFilesFunction();

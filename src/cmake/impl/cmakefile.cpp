@@ -13,7 +13,6 @@ namespace cmake {
 
 namespace {
   const unsigned int IncludeFunctionArgumentPosition = 1;
-  const std::string SetSourceFilesArgumentName = "SRC_FILES";
 }
 
 std::shared_ptr<CmakeFile> CmakeFile::parse(const std::string& directoryPath, const std::string& filePath) {
@@ -109,6 +108,32 @@ void CmakeFile::replaceIncludeFiles(const std::vector<std::string>& includeFiles
 
   const auto itr = std::find_if(functions_.begin(), functions_.end(), [&includeFileCriteria](const auto& function) {
     return includeFileCriteria.matches(*function);
+  });
+  moveFunctions(itr + 1, lineOffset);
+}
+
+void CmakeFile::replaceSourceFiles(const std::vector<std::string>& sourceFiles) {
+  const auto sourceFileCriteria = CmakeSetFileFunctionCriteria(CmakeSetFileFunctionCriteria::SourceFiles);
+  const auto* sourceFileFunction = getFunction(sourceFileCriteria);
+  if (!sourceFileFunction) {
+    return;
+  }
+
+  const int lineOffset = (sourceFiles.size() - (sourceFileFunction->arguments().size() - 1));
+
+  const auto newFunction = createReplacementFunction(
+    sourceFileFunction->name(),
+    constants::SetSourceFilesArgumentName,
+    *sourceFileFunction->startPosition(),
+    sourceFiles
+  );
+
+  std::replace_if(functions_.begin(), functions_.end(), [&sourceFileCriteria](const auto& function) {
+    return sourceFileCriteria.matches(*function);
+  }, newFunction);
+
+  const auto itr = std::find_if(functions_.begin(), functions_.end(), [&sourceFileCriteria](const auto& function) {
+    return sourceFileCriteria.matches(*function);
   });
   moveFunctions(itr + 1, lineOffset);
 }
