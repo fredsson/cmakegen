@@ -26,6 +26,7 @@ public:
 
   void addFunction(const std::shared_ptr<CmakeFunction>& func);
   void replaceIncludeFiles(const std::vector<std::string>& includeFiles);
+  void replaceSourceFiles(const std::vector<std::string>& sourceFiles);
   void removeIncludeFiles();
   void write();
 
