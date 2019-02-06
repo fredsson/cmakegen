@@ -155,7 +155,7 @@ void CmakeFile::removeIncludeFiles() {
 
   const auto* projectFunction = getFunction(CmakeProjectFunctionCriteria());
   auto* outputFunc = getFunction(CmakeOutputFunctionCriteria(projectFunction->arguments()[0].value_));
-  outputFunc->removeArgument(constants::SetIncludeFilesArgumentName);
+  outputFunc->removeArgument(constants::SetIncludeFilesOutputArgument);
 }
 
 void CmakeFile::write() {
@@ -213,7 +213,7 @@ void CmakeFile::addIncludeFunction(const std::vector<std::string>& includeFiles)
 
   outputFunc->insertArgument(
     IncludeFunctionArgumentPosition,
-    {constants::SetIncludeFilesArgumentName, {outputFunc->arguments()[0].position_->line_, outputFunc->arguments()[1].position_->column_}}
+    {constants::SetIncludeFilesOutputArgument, {outputFunc->arguments()[0].position_->line_, outputFunc->arguments()[1].position_->column_}}
   );
 }
 
