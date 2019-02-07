@@ -1,17 +1,22 @@
 #include "cmakescanner.h"
 #include <sstream>
 #include <stdio.h>
-#include <iostream>
 
 namespace cmake {
 
 namespace {
   bool isAlphaNum(const char& c) {
-    if(c == '.' || c == '_' || c == '\\' || c == '/') {
+    if(c == '.' || c == '_' || c == '\\' || c == '/' || c == '$' || c == '{' || c == '}') {
       return true;
     }
 
     return isalnum(c);
+  }
+
+  char nextCharacter(std::ifstream& file) {
+    char c;
+    file.get(c);
+    return c;
   }
 }
 
@@ -66,10 +71,10 @@ Token CmakeScanner::getNextToken() {
       };
     }
 
-    if (isAlphaNum(c) || c == '"') {
+    if (isAlphaNum(c) || c == '"' || (scanningArguments_ && c == '-')) {
       bool quoted = (c == '"');
       std::stringstream s;
-      while(isAlphaNum(c) || c == '"') {
+      while(isAlphaNum(c) || c == '"' || (scanningArguments_ && c == '-')) {
         s << c;
         file_.get(c);
       }
@@ -87,10 +92,56 @@ Token CmakeScanner::getNextToken() {
       };
     }
 
+    if(c == '#') {
+      return getComment();
+    }
+
     return { TokenType::BADCHARACTER, "", 0, currentLine_, currentColumn_ };
   }
 
   return { TokenType::NONE, "", 0, currentLine_, currentColumn_ };
+}
+
+Token CmakeScanner::getComment() {
+  bool multiLine = false;
+  char c = '#';
+  std::stringstream s;
+  s << c;
+
+  char previous = c;
+  c = nextCharacter(file_);
+
+  int commentLines = 0;
+  int commentColumns = 1;
+  //stop when c == '\n' or (muliline && c == ] && previous == ])
+  while ((multiLine || c != '\n') && (!multiLine || (c != ']' || previous != ']'))) {
+    if (c == '[' && previous == '[') {
+      multiLine = true;
+    }
+    if (multiLine && c == '\n') {
+      commentLines++;
+      commentColumns = 0;
+    }
+    s << c;
+    previous = c;
+    c = nextCharacter(file_);
+    commentColumns++;
+  }
+
+  if (multiLine) {
+    s << c;
+    commentColumns++;
+  }
+
+  lastChar_ = c;
+  const auto comment = s.str();
+  const auto column = currentColumn_;
+  const auto line = currentLine_;
+
+  currentColumn_ += commentColumns;
+  currentLine_ += commentLines;
+
+  return {TokenType::COMMENTBRACKET, comment, (unsigned int)comment.size(), line, column};
 }
 
 }

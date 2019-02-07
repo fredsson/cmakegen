@@ -37,6 +37,7 @@ public:
   ~CmakeScanner();
   Token getNextToken();
 private:
+  Token getComment();
   unsigned int currentLine_;
   unsigned int currentColumn_;
   char lastChar_;
