@@ -1,5 +1,6 @@
 #include "cmakeformatter.h"
 #include "../cmakefile.h"
+#include <algorithm>
 
 namespace cmake {
 
@@ -40,10 +41,13 @@ void CmakeFormatter::formatGenerated(std::ostream& stream, CmakeFile& file) {
 
 void CmakeFormatter::formatFileWithPositions(std::ostream& stream, CmakeFile& file) {
   for (const auto& f : file.functions()) {
-      const auto* startPosition = f->startPosition();
+    const auto* startPosition = f->startPosition();
 
-      moveStreamToPosition(stream, *startPosition);
+    moveStreamToPosition(stream, *startPosition);
 
+    if (f->name()[0] == '#') {
+      write(stream, f->name());
+    } else {
       write(stream, f->name() + "(");
 
       for (const auto& argument : f->arguments()) {
@@ -56,6 +60,7 @@ void CmakeFormatter::formatFileWithPositions(std::ostream& stream, CmakeFile& fi
       moveStreamToPosition(stream, *f->endPosition());
 
       stream << ")";
+    }
   }
 
   stream << "\n";
@@ -64,6 +69,8 @@ void CmakeFormatter::formatFileWithPositions(std::ostream& stream, CmakeFile& fi
 void CmakeFormatter::write(std::ostream& stream, std::string text) {
   stream << text;
   currentColumn_ += text.size();
+  const auto n = std::count(text.begin(), text.end(), '\n');
+  currentLine_ += n;
 }
 
 void CmakeFormatter::moveStreamToPosition(std::ostream& stream, const FilePosition& position) {

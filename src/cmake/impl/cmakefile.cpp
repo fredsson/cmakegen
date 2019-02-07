@@ -37,6 +37,9 @@ std::shared_ptr<CmakeFile> CmakeFile::parse(const std::string& directoryPath, co
           }
         }
       break;
+      case TokenType::COMMENTBRACKET:
+        cmakeFile->addFunction(CmakeFunction::create(token.text, {}, {token.line, token.column}, {token.line, token.column}));
+      break;
       default:
       break;
     }
@@ -178,6 +181,7 @@ std::shared_ptr<CmakeFunction> CmakeFile::parseFunction(const Token& parentToken
     switch(token.type) {
       case TokenType::IDENTIFIER:
       case TokenType::ARGUMENTUNQUOTED:
+      case TokenType::COMMENTBRACKET:
         arguments.push_back({ token.text, {token.line, token.column}});
       break;
       case TokenType::ARGUMENTQUOTED:
