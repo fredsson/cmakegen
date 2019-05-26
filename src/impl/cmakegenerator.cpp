@@ -207,9 +207,16 @@ void CmakeGenerator::populateCmakeFile(
   }
 
   auto files = file_utils::getFilesForProject(directory);
-  if (!files.empty()) {
-    cmakeFile->addFunction(files.createIncludeFilesFunction(directory));
-    cmakeFile->addFunction(files.createSourceFilesFunction(directory));
+  const auto hasIncludeFiles = !files.includeFiles.empty();
+  const auto hasSourceFiles = !files.sourceFiles.empty();
+  if (hasIncludeFiles || hasSourceFiles) {
+    if (hasIncludeFiles) {
+      cmakeFile->addFunction(files.createIncludeFilesFunction(directory));
+    }
+
+    if (hasSourceFiles) {
+      cmakeFile->addFunction(files.createSourceFilesFunction(directory));
+    }
 
     ioHandler_.write("Found source files for " + projectName + " what should the project type be? (lib/exe)");
     const auto projectType = getProjectType(ioHandler_).find("lib") != std::string::npos ? "add_library" : "add_executable";
