@@ -34,6 +34,7 @@ void CmakeFormatter::formatGenerated(std::ostream& stream, CmakeFile& file) {
     }
 
     stream << (includeOrSourceList ? "\n" : "") << ")";
+    stream << "\n\n";
   }
 
   stream << "\n";
