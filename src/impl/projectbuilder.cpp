@@ -11,22 +11,25 @@
 #include <stdlib.h>
 
 namespace {
-  bool isSetArgument(const std::string& argument) {
-    return argument == cmake::constants::SetIncludeFilesArgumentName || argument == cmake::constants::SetSourceFilesArgumentName;
+  bool isSetArgument(const cmake::CmakeFunctionArgument& argument) {
+    return argument.value_ == cmake::constants::SetIncludeFilesArgumentName || argument.value_ == cmake::constants::SetSourceFilesArgumentName;
   }
-  bool filesChanged(const std::vector<std::string>& newFiles, const std::vector<cmake::CmakeFunctionArgument>& currentArguments) {
-    for (const auto& argument : currentArguments) {
-      if (isSetArgument(argument.value_)) {
-        continue;
-      }
-      for (const auto& file : newFiles) {
-        if (file == argument.value_) {
-          return true;
-        }
-      }
-    }
 
-    return false;
+  bool fileMatchesArgument(const cmake::CmakeFunctionArgument& argument, const std::string& filePath) {
+    const auto relativePath = file_utils::makeRelative(filePath);
+    return argument.value_ == relativePath;
+  }
+
+  bool filesChanged(const std::vector<std::string>& newFiles, const std::vector<cmake::CmakeFunctionArgument>& currentArguments) {
+    return std::any_of(currentArguments.begin(), currentArguments.end(), [&newFiles](const cmake::CmakeFunctionArgument& argument) {
+      if (isSetArgument(argument.value_)) {
+        return true;
+      }
+
+      return std::any_of(newFiles.begin(), newFiles.end(), [&argument](const std::string& newFile) {
+        return !fileMatchesArgument(argument, newFile);
+      });
+    });
   }
 }
 
