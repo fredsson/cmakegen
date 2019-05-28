@@ -112,9 +112,6 @@ std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
 
   DirectoryFiles files;
 
-  std::copy(directory->includeFiles().begin(), directory->includeFiles().end(), std::back_inserter(files.includeFiles));
-  std::copy(directory->sourceFiles().begin(), directory->sourceFiles().end(), std::back_inserter(files.sourceFiles));
-
   directory->forEachIf(
     [&files](const file_utils::Directory& dir) {
       std::copy(dir.includeFiles().begin(), dir.includeFiles().end(), std::back_inserter(files.includeFiles));
