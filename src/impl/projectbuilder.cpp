@@ -52,19 +52,19 @@ void ProjectBuilder::update() {
 
   for (const auto* cmakeDirectory : cmakeDirectories) {
     const auto cmakeFile = cmake::CmakeFile::parse(cmakeDirectory->path(), cmakeDirectory->path() + "/" + cmake::constants::FileName);
-    auto files = file_utils::getFilesForProject(cmakeDirectory);
+    auto projectFiles = file_utils::getFilesForProject(cmakeDirectory);
 
-    if (files.empty()) {
+    if (projectFiles.empty()) {
       continue;
     }
 
     const auto* includeFileFunction = cmakeFile->getFunction(
       cmake::CmakeSetFileFunctionCriteria(cmake::CmakeSetFileFunctionCriteria::IncludeFiles)
     );
-    if (!files.includeFiles.empty()) {
-      replaceSetFunction([&cmakeFile](const std::vector<std::string>& files){
+    if (!projectFiles.includeFiles.empty()) {
+      replaceSetFunction([&cmakeFile](const std::vector<std::string>& files) {
         cmakeFile->replaceIncludeFiles(files);
-      }, includeFileFunction, files.includeFiles);
+      }, includeFileFunction, projectFiles.includeFiles);
     } else if (includeFileFunction) {
       cmakeFile->removeIncludeFiles();
     }
@@ -72,10 +72,10 @@ void ProjectBuilder::update() {
     const auto* sourceFileFunction = cmakeFile->getFunction(
       cmake::CmakeSetFileFunctionCriteria(cmake::CmakeSetFileFunctionCriteria::SourceFiles)
     );
-    if (!files.sourceFiles.empty()) {
-      replaceSetFunction([&cmakeFile](const std::vector<std::string>& files){
+    if (!projectFiles.sourceFiles.empty()) {
+      replaceSetFunction([&cmakeFile](const std::vector<std::string>& files) {
         cmakeFile->replaceSourceFiles(files);
-      }, sourceFileFunction, files.sourceFiles);
+      }, sourceFileFunction, projectFiles.sourceFiles);
     }
 
     cmakeFile->write();
