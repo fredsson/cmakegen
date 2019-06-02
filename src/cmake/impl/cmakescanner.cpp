@@ -9,14 +9,6 @@
 namespace cmake {
 
 namespace {
-  bool isAlphaNum(const char& c) {
-    if(c == '.' || c == '_' || c == '\\' || c == '/' || c == '$' || c == '{' || c == '}' || c == ':' || c == '-') {
-      return true;
-    }
-
-    return isalnum(c);
-  }
-
   char nextCharacter(std::ifstream& file) {
     char c;
     file.get(c);
@@ -65,56 +57,49 @@ Token CmakeScanner::getNextToken() {
     return { TokenType::ENDOFFILE, "", 0, currentLine_, currentColumn_ };
   }
 
-  char c;
-  while(true) {
-    if (lastChar_) {
-      c = lastChar_;
-      lastChar_ = 0;
-    } else {
-      file_.get(c);
-    }
-
-    if (file_.eof()) {
-      return {TokenType::ENDOFFILE, "", 0, currentLine_, currentColumn_};
-    }
-
-    if (c == ' ') {
-      return {TokenType::SPACE, " ", 1, currentLine_, currentColumn_++};
-    }
-
-    if (c == '\n') {
-      currentColumn_ = 1;
-      currentLine_++;
-      return {TokenType::NEWLINE, "\n", 1, currentLine_, currentColumn_};
-    }
-
-    if (c == '(' || c == ')') {
-      scanningArguments_ = (c == '(');
-      return {
-        (c == '(') ? TokenType::PARENLEFT : TokenType::PARENRIGHT,
-        {1, c},
-        1,
-        currentLine_,
-        currentColumn_++
-      };
-    }
-
-    if (scanningArguments_) {
-      return getArgument(c);
-    }
-
-    if (isAlphaNum(c)) {
-      return getIdentifier(c);
-    }
-
-    if(c == '#') {
-      return getComment();
-    }
-
-    return { TokenType::BADCHARACTER, "", 0, currentLine_, currentColumn_ };
+  char c = lastChar_ ? lastChar_ : nextCharacter(file_);
+  if (lastChar_) {
+    lastChar_ = 0;
   }
 
-  return { TokenType::NONE, "", 0, currentLine_, currentColumn_ };
+  if (file_.eof()) {
+    return {TokenType::ENDOFFILE, "", 0, currentLine_, currentColumn_};
+  }
+
+  if (c == ' ') {
+    return {TokenType::SPACE, " ", 1, currentLine_, currentColumn_++};
+  }
+
+  if (c == '\n') {
+    currentColumn_ = 1;
+    currentLine_++;
+    return {TokenType::NEWLINE, "\n", 1, currentLine_, currentColumn_};
+  }
+
+  if (c == '(' || c == ')') {
+    scanningArguments_ = (c == '(');
+    return {
+      (c == '(') ? TokenType::PARENLEFT : TokenType::PARENRIGHT,
+      {1, c},
+      1,
+      currentLine_,
+      currentColumn_++
+    };
+  }
+
+  if (scanningArguments_) {
+    return getArgument(c);
+  }
+
+  if (allowedInIdentifier(c)) {
+    return getIdentifier(c);
+  }
+
+  if(c == '#') {
+    return getComment();
+  }
+
+  return { TokenType::BADCHARACTER, "", 0, currentLine_, currentColumn_ };
 }
 
 Token CmakeScanner::getComment() {
