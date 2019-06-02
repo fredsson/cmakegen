@@ -38,6 +38,9 @@ public:
   Token getNextToken();
 private:
   Token getComment();
+  Token getArgument(char c);
+  Token getIdentifier(char c);
+
   unsigned int currentLine_;
   unsigned int currentColumn_;
   char lastChar_;
