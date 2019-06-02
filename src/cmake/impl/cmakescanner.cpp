@@ -60,9 +60,6 @@ CmakeScanner::~CmakeScanner() {
   file_.close();
 }
 
-// https://github.com/Kitware/CMake/blob/e80e8eb609cc7dd8c4dca46b9c2819afd2293229/Source/LexerParser/cmListFileLexer.in.l
-// http://llvm.org/docs/tutorial/LangImpl01.html
-// https://stackoverflow.com/questions/6216449/where-can-i-learn-the-basics-of-writing-a-lexer
 Token CmakeScanner::getNextToken() {
   if (!file_.is_open()) {
     return { TokenType::ENDOFFILE, "", 0, currentLine_, currentColumn_ };
@@ -131,7 +128,6 @@ Token CmakeScanner::getComment() {
 
   int commentLines = 0;
   int commentColumns = 1;
-  //stop when c == '\n' or (muliline && c == ] && previous == ])
   while ((multiLine || c != '\n') && (!multiLine || (c != ']' || previous != ']'))) {
     if (c == '[' && previous == '[') {
       multiLine = true;
