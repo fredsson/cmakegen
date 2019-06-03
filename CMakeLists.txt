@@ -12,9 +12,6 @@ set(CMAKE_CXX_CLANG_TIDY
   -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-implicit-bool-conversion
 )
 
-add_library(stdc++fs UNKNOWN IMPORTED)
-set_property(TARGET stdc++fs PROPERTY IMPORTED_LOCATION "/usr/lib/libstdc++fs.a")
-
 set(SRC_FILES
   "src/cmake/impl/cmakescanner.cpp"
   "src/cmake/impl/cmakefunctioncriteria.cpp"
