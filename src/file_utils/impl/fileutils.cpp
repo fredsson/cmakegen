@@ -5,11 +5,11 @@
 #include "../../cmake/cmakefile.h"
 
 #include <algorithm>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <functional>
 #include <queue>
 
-namespace filesystem = std::experimental::filesystem;
+namespace filesystem = std::filesystem;
 
 namespace file_utils {
 namespace {
