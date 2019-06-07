@@ -15,7 +15,7 @@ namespace {
     return c;
   }
 
-  const std::vector<char> argumentCharacters = {'.', '_', '\\', '/', '$', '{', '}', ':', '-', '"'};
+  const std::vector<char> argumentCharacters = {'.', '_', '\\', '/', '$', '{', '}', ':', '-', '"', '+'};
   bool allowedInArgument(char c) {
     bool specialCharacter = std::any_of(argumentCharacters.begin(), argumentCharacters.end(), [c](char argumentCharacter){
       return c == argumentCharacter;
@@ -99,7 +99,7 @@ Token CmakeScanner::getNextToken() {
     return getComment();
   }
 
-  return { TokenType::BADCHARACTER, "", 0, currentLine_, currentColumn_ };
+  return { TokenType::BADCHARACTER, "" + c, 0, currentLine_, currentColumn_++ };
 }
 
 Token CmakeScanner::getComment() {

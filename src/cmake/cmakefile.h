@@ -6,15 +6,16 @@
 #include <string>
 #include <vector>
 
+class IoHandler;
+
 namespace cmake {
 
 struct Token;
 class CmakeScanner;
-
 class ICmakeFunctionCriteria;
 class CmakeFile {
 public:
-  static std::shared_ptr<CmakeFile> parse(const std::string& directoryPath, const std::string& filePath);
+  static std::shared_ptr<CmakeFile> parse(const std::string& directoryPath, const std::string& filePath, IoHandler& ioHandler);
 
   CmakeFile(const std::string& path);
 

@@ -33,8 +33,8 @@ namespace {
   }
 }
 
-ProjectBuilder::ProjectBuilder(const file_utils::IgnoreFile& ignoreFile)
-  : ignoreFile_(ignoreFile) {
+ProjectBuilder::ProjectBuilder(const file_utils::IgnoreFile& ignoreFile, IoHandler& ioHandler)
+  : ignoreFile_(ignoreFile), ioHandler_(ioHandler) {
 }
 
 void ProjectBuilder::run() {
@@ -51,7 +51,11 @@ void ProjectBuilder::update() {
   });
 
   for (const auto* cmakeDirectory : cmakeDirectories) {
-    const auto cmakeFile = cmake::CmakeFile::parse(cmakeDirectory->path(), cmakeDirectory->path() + "/" + cmake::constants::FileName);
+    const auto cmakeFile = cmake::CmakeFile::parse(
+      cmakeDirectory->path(),
+      cmakeDirectory->path() + "/" + cmake::constants::FileName,
+      ioHandler_
+    );
     auto projectFiles = file_utils::getFilesForProject(cmakeDirectory);
 
     if (projectFiles.empty()) {
