@@ -2,6 +2,7 @@
 #include "../file_utils/fileutils.h"
 #include "../file_utils/directory.h"
 #include "../cmake/cmakefile.h"
+#include "../iohandler.h"
 
 #include <sstream>
 #include <fstream>

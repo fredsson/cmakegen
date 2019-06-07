@@ -8,13 +8,7 @@ class IgnoreFile;
 class Directory;
 }
 
-class IoHandler {
-public:
-  virtual ~IoHandler() {};
-  virtual void write(const std::string& text) = 0;
-  virtual std::string input() = 0;
-};
-
+class IoHandler;
 class CmakeGenerator {
 public:
   CmakeGenerator(

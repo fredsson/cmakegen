@@ -2,6 +2,7 @@
 #include "cmdoptionparser.h"
 #include "cmakegenerator.h"
 #include "file_utils/ignorefile.h"
+#include "iohandler.h"
 #include "cmake/cmakefile.h"
 #include "projectbuilder.h"
 
