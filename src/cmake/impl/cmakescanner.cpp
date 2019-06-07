@@ -99,7 +99,7 @@ Token CmakeScanner::getNextToken() {
     return getComment();
   }
 
-  return { TokenType::BADCHARACTER, "", 0, currentLine_, currentColumn_ };
+  return { TokenType::BADCHARACTER, "", 0, currentLine_, currentColumn_++ };
 }
 
 Token CmakeScanner::getComment() {
