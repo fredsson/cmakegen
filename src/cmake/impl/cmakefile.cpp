@@ -2,6 +2,7 @@
 #include "cmakescanner.h"
 #include "cmakeformatter.h"
 #include "../../file_utils/fileutils.h"
+#include "../../iohandler.h"
 #include "../cmakefunctioncriteria.h"
 #include "constants.h"
 
@@ -15,7 +16,7 @@ namespace {
   const unsigned int IncludeFunctionArgumentPosition = 1;
 }
 
-std::shared_ptr<CmakeFile> CmakeFile::parse(const std::string& directoryPath, const std::string& filePath) {
+std::shared_ptr<CmakeFile> CmakeFile::parse(const std::string& directoryPath, const std::string& filePath, IoHandler& ioHandler) {
   CmakeScanner scanner(filePath);
 
   Token token = { TokenType::NONE, "", 0, 0, 0 };
@@ -39,6 +40,9 @@ std::shared_ptr<CmakeFile> CmakeFile::parse(const std::string& directoryPath, co
       break;
       case TokenType::COMMENTBRACKET:
         cmakeFile->addFunction(CmakeFunction::create(token.text, {}, {token.line, token.column}, {token.line, token.column}));
+      break;
+      case TokenType::BADCHARACTER:
+        ioHandler.write("Character " + token.text + " not allowed in CMakeLists.txt");
       break;
       default:
       break;

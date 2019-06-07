@@ -26,7 +26,8 @@ void generateCmakeFiles(const std::string& cmakeVersion, const std::string& cppV
 }
 
 void updateCmakeFiles(const file_utils::IgnoreFile& ignoreFile) {
-  ProjectBuilder builder(ignoreFile);
+  auto ioHandler = StdIoHandler();
+  ProjectBuilder builder(ignoreFile, ioHandler);
   builder.run();
 }
 

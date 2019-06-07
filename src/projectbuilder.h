@@ -12,9 +12,10 @@ namespace cmake {
 class CmakeFunction;
 }
 
+class IoHandler;
 class ProjectBuilder {
 public:
-  ProjectBuilder(const file_utils::IgnoreFile& ignoreFile);
+  ProjectBuilder(const file_utils::IgnoreFile& ignoreFile, IoHandler& ioHandler);
   void run();
 private:
   void update();
@@ -26,6 +27,7 @@ private:
   void build();
 
   const file_utils::IgnoreFile& ignoreFile_;
+  IoHandler& ioHandler_;
 };
 
 #endif
