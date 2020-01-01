@@ -12,6 +12,21 @@ set(CMAKE_CXX_CLANG_TIDY
   -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-implicit-bool-conversion
 )
 
+set(INCLUDE_FILES
+  "src/cmake/cmakefile.h"
+  "src/cmake/cmakefunction.h"
+  "src/cmake/cmakefunctioncriteria.h"
+  "src/cmake/impl/cmakeformatter.h"
+  "src/cmake/impl/cmakescanner.h"
+  "src/cmake/impl/constants.h"
+  "src/file_utils/directory.h"
+  "src/file_utils/fileutils.h"
+  "src/file_utils/ignorefile.h"
+  "src/cmakegenerator.h"
+  "src/cmdoptionparser.h"
+  "src/projectbuilder.h"
+)
+
 set(SRC_FILES
   "src/cmake/impl/cmakescanner.cpp"
   "src/cmake/impl/cmakefunctioncriteria.cpp"
@@ -27,7 +42,7 @@ set(SRC_FILES
   "src/main.cpp"
 )
 
-add_executable(cmakegen ${SRC_FILES})
+add_executable(cmakegen ${INCLUDE_FILES} ${SRC_FILES})
 
 target_compile_features(cmakegen PRIVATE cxx_std_17)
 target_compile_options(cmakegen PRIVATE -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Werror)
