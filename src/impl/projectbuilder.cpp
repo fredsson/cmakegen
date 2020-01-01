@@ -8,6 +8,7 @@
 #include "../cmake/cmakefunctioncriteria.h"
 #include "../cmake/impl/constants.h"
 
+#include <algorithm>
 #include <stdlib.h>
 
 namespace {
