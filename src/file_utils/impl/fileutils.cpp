@@ -97,7 +97,7 @@ std::string makeRelative(const std::string& target, const std::string& rootPath)
 
 std::string directoryName(const std::string& path) {
   auto filePath = filesystem::path(path);
-  return filePath.filename();
+  return filePath.filename().generic_string();
 }
 
 void createDir(const std::string& name) {
