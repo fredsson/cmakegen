@@ -15,7 +15,7 @@ namespace {
     return c;
   }
 
-  const std::vector<char> argumentCharacters = {'.', '_', '\\', '/', '$', '{', '}', ':', '-', '"', '+'};
+  const std::vector<char> argumentCharacters = {'.', '_', '\\', '/', '$', '{', '}', ':', '-', '"', '+', '|'};
   bool allowedInArgument(char c) {
     bool specialCharacter = std::any_of(argumentCharacters.begin(), argumentCharacters.end(), [c](char argumentCharacter){
       return c == argumentCharacter;
