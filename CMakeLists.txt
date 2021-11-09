@@ -10,10 +10,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 if(BUILD_WITH_TIDY)
-set(CMAKE_CXX_CLANG_TIDY
-  clang-tidy
-  -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-implicit-bool-conversion
-)
+  set(CMAKE_CXX_CLANG_TIDY
+    clang-tidy
+    -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-implicit-bool-conversion
+  )
 endif(BUILD_WITH_TIDY)
 
 set(INCLUDE_FILES
@@ -49,8 +49,19 @@ set(SRC_FILES
 add_executable(cmakegen ${INCLUDE_FILES} ${SRC_FILES})
 
 target_compile_features(cmakegen PRIVATE cxx_std_17)
-target_compile_options(cmakegen PRIVATE -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic -Werror)
-target_link_libraries(cmakegen stdc++fs)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  message(STATUS "GCC|Clang detected, adding compile flags")
+  target_compile_options(cmakegen
+    PRIVATE
+    -Wall
+    -Wextra
+    -Wshadow
+    -Wnon-virtual-dtor
+    -pedantic
+    -Werror
+  )
+endif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
 install(
   TARGETS cmakegen
