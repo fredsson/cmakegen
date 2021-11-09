@@ -25,9 +25,9 @@ void generateCmakeFiles(const std::string& cmakeVersion, const std::string& cppV
   generator.run();
 }
 
-void updateCmakeFiles(const file_utils::IgnoreFile& ignoreFile) {
+void updateCmakeFiles(const std::string& buildSystem, const file_utils::IgnoreFile& ignoreFile) {
   auto ioHandler = StdIoHandler();
-  ProjectBuilder builder(ignoreFile, ioHandler);
+  ProjectBuilder builder(buildSystem, ignoreFile, ioHandler);
   builder.run();
 }
 
@@ -50,7 +50,11 @@ int main(int argc, char *argv[]) {
       ignoreFile
     );
   } else if (optionParser.hasAnyOption({ "-b", "--build" })) {
-    updateCmakeFiles(ignoreFile);
+    const auto* cmdBuildSystem = optionParser.getOption("--system");
+    updateCmakeFiles(
+      cmdBuildSystem != nullptr ? cmdBuildSystem : "make",
+      ignoreFile
+    );
   } else {
   }
   return 0;

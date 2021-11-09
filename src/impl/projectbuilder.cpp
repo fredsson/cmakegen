@@ -34,8 +34,8 @@ namespace {
   }
 }
 
-ProjectBuilder::ProjectBuilder(const file_utils::IgnoreFile& ignoreFile, IoHandler& ioHandler)
-  : ignoreFile_(ignoreFile), ioHandler_(ioHandler) {
+ProjectBuilder::ProjectBuilder(const std::string& buildSystem, const file_utils::IgnoreFile& ignoreFile, IoHandler& ioHandler)
+  : buildSystem_(buildSystem), ignoreFile_(ignoreFile), ioHandler_(ioHandler) {
 }
 
 void ProjectBuilder::run() {
@@ -113,5 +113,10 @@ void ProjectBuilder::replaceSetFunction(
 void ProjectBuilder::build() {
   file_utils::createDir("_build");
 
-  system("cd _build && cmake ../ && make");
+  // TODO: Handle more build systems here
+  if (buildSystem_ == "ninja") {
+    system("cd _build && cmake -GNinja ../ && ninja");
+  } else {
+    system("cd _build && cmake ../ && make");
+  }
 }
