@@ -231,6 +231,10 @@ void CmakeGenerator::populateCmakeFile(
       {cppVersion}
     }));
 
+    cmakeFile->addFunction(cmake::CmakeFunction::create("if", {
+      {"CMAKE_CXX_COMPILER_ID MATCHES \"GNU|Clang\""},
+    }));
+
     cmakeFile->addFunction(cmake::CmakeFunction::create("target_compile_options", {
       {projectName},
       {"PRIVATE"},
@@ -240,6 +244,10 @@ void CmakeGenerator::populateCmakeFile(
       {"-Wnon-virtual-dtor"},
       {"-pedantic"},
       {"-Werror"},
+    }));
+
+    cmakeFile->addFunction(cmake::CmakeFunction::create("endif", {
+      {"CMAKE_CXX_COMPILER_ID MATCHES \"GNU|Clang\""},
     }));
   }
 
