@@ -1,5 +1,6 @@
 #include "../directory.h"
 #include <queue>
+#include <iterator>
 
 namespace file_utils {
 
