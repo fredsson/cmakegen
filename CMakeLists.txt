@@ -2,15 +2,19 @@ cmake_minimum_required(VERSION 3.10.0)
 
 project(cmakegen VERSION 0.1.0 LANGUAGES CXX)
 
+option(BUILD_WITH_TIDY "BUILD_WITH_TIDY" OFF)
+
 if(NOT CMAKE_BUILD_TYPE)
   message("-- No Build type set: defaulting to Debug")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build Configuration")
 endif(NOT CMAKE_BUILD_TYPE)
 
+if(BUILD_WITH_TIDY)
 set(CMAKE_CXX_CLANG_TIDY
   clang-tidy
   -checks=-*,readability-*,clang-analyzer-*,cppcoreguidelines-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-implicit-bool-conversion
 )
+endif(BUILD_WITH_TIDY)
 
 set(INCLUDE_FILES
   "src/cmake/cmakefile.h"
