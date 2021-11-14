@@ -114,9 +114,14 @@ void ProjectBuilder::build() {
   file_utils::createDir("_build");
 
   // TODO: Handle more build systems here
+  int result;
   if (buildSystem_ == "ninja") {
-    system("cd _build && cmake -GNinja ../ && ninja");
+    result = system("cd _build && cmake -GNinja ../ && ninja");
   } else {
-    system("cd _build && cmake ../ && make");
+    result = system("cd _build && cmake ../ && make");
+  }
+
+  if (result != 0) {
+    // TODO: log something here
   }
 }
