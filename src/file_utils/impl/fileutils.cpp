@@ -122,6 +122,9 @@ std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
     }
   );
 
+  std::sort(files.includeFiles.begin(), files.includeFiles.end());
+  std::sort(files.sourceFiles.begin(), files.sourceFiles.end());
+
   return files;
 }
 
