@@ -1,4 +1,5 @@
 #include "../directory.h"
+#include <algorithm>
 #include <queue>
 #include <iterator>
 
