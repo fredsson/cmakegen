@@ -2,12 +2,14 @@
 #include "../ignorefile.h"
 #include "../directory.h"
 
-#include "../../cmake/cmakefile.h"
+#include "../../cmake/cmakefunction.h"
 
 #include <algorithm>
 #include <filesystem>
 #include <functional>
-#include <queue>
+#include <unordered_map>
+
+#include <iostream>
 
 namespace filesystem = std::filesystem;
 
@@ -16,38 +18,10 @@ namespace {
 const std::vector<std::string> HEADER_EXTENSIONS = {".h", ".hpp", ".hh"};
 const std::vector<std::string> SOURCE_EXTENSIONS = {".c", ".cpp", ".c++"};
 
-bool hasExtension(const std::string& path, const std::vector<std::string>& extensions) {
+bool hasExtension(const std::filesystem::path& path, const std::vector<std::string>& extensions) {
   return std::any_of(extensions.begin(), extensions.end(), [&path](const std::string& extension){
-    const auto position = path.find(extension);
-    return position == path.size() - extension.size();
+    return path.extension().compare(extension) == 0;
   });
-}
-
-std::shared_ptr<Directory> walkDirectory(const filesystem::path& rootPath, const IgnoreFile& ignoreFile, std::shared_ptr<Directory> parent) {
-
-  std::shared_ptr<Directory> currentDirectory = std::make_shared<Directory>(rootPath.generic_string(), parent);
-
-  for (const auto& entry : filesystem::directory_iterator(rootPath)) {
-    const auto& path = entry.path().generic_string();
-    if (ignoreFile.contains(path)) {
-      continue;
-    }
-
-    if (entry.status().type() == filesystem::file_type::directory) {
-      currentDirectory->addChild(walkDirectory(entry.path(), ignoreFile, currentDirectory));
-      continue;
-    }
-
-    if (hasExtension(path, HEADER_EXTENSIONS)) {
-      currentDirectory->addIncludeFile(path);
-    } else if (hasExtension(path, SOURCE_EXTENSIONS)) {
-      currentDirectory->addSourceFile(path);
-    } else if (path.find("CMakeLists.txt") != std::string::npos) {
-      currentDirectory->addCmakeFile();
-    }
-  }
-
-  return currentDirectory;
 }
 
 }
@@ -105,7 +79,54 @@ void createDir(const std::string& name) {
 }
 
 std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
-  return walkDirectory(filesystem::current_path(), ignoreFile, nullptr);
+  filesystem::recursive_directory_iterator directoryItr{filesystem::current_path()};
+
+  auto root = std::make_shared<Directory>(
+    filesystem::current_path().string(),
+    nullptr
+  );
+
+  std::unordered_map<std::string, std::shared_ptr<Directory>> directoryByPath;
+  directoryByPath.insert({
+    filesystem::current_path().string(),
+    root
+  });
+  for (const auto& entry : directoryItr) {
+    const auto p = entry.path().string();
+    if (ignoreFile.contains(p)) {
+      continue;
+    }
+
+    const auto parentPath = entry.path().parent_path().string();
+    const auto parentItr = directoryByPath.find(parentPath);
+    if (parentItr == directoryByPath.end()) {
+      std::cout << "could not find directory " << parentPath  << "!\n";
+      continue;
+    }
+
+    if (entry.is_directory()) {
+      auto dir = std::make_shared<Directory>(p, parentItr->second);
+      directoryByPath.insert({
+        p,
+        dir
+      });
+      parentItr->second->addChild(dir);
+    }
+    if (entry.is_regular_file()) {
+      // TODO: this needs to be relative to closest cmake file
+      const auto relativePath = std::filesystem::relative(entry.path(), root->path());
+
+      if (hasExtension(entry.path(), HEADER_EXTENSIONS)) {
+        parentItr->second->addIncludeFile(relativePath.string());
+      } else if (hasExtension(entry.path(), SOURCE_EXTENSIONS)) {
+        parentItr->second->addSourceFile(relativePath.string());
+      } else if (p.find("CMakeLists.txt") != std::string::npos) {
+        parentItr->second->addCmakeFile();
+      }
+    }
+  }
+
+  return root;
 }
 
  DirectoryFiles getFilesForProject(const Directory* directory) {

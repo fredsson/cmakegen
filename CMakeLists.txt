@@ -4,6 +4,8 @@ project(cmakegen VERSION 0.1.0 LANGUAGES CXX)
 
 option(BUILD_WITH_TIDY "BUILD_WITH_TIDY" OFF)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(NOT CMAKE_BUILD_TYPE)
   message("-- No Build type set: defaulting to Debug")
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build Configuration")
@@ -48,7 +50,7 @@ set(SRC_FILES
 
 add_executable(cmakegen ${INCLUDE_FILES} ${SRC_FILES})
 
-target_compile_features(cmakegen PRIVATE cxx_std_17)
+target_compile_features(cmakegen PRIVATE cxx_std_20)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   message(STATUS "GCC|Clang detected, adding compile flags")
