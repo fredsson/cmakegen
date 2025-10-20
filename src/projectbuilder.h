@@ -15,7 +15,12 @@ class CmakeFunction;
 class IoHandler;
 class ProjectBuilder {
 public:
-  ProjectBuilder(const std::string& buildSystem, const file_utils::IgnoreFile& ignoreFile, IoHandler& ioHandler);
+  ProjectBuilder(
+    const std::string& buildSystem,
+    const bool debug,
+    const file_utils::IgnoreFile& ignoreFile,
+    IoHandler& ioHandler
+  );
   void run();
 private:
   void update();
@@ -27,6 +32,7 @@ private:
   void build();
 
   std::string buildSystem_;
+  bool debug_;
   const file_utils::IgnoreFile& ignoreFile_;
   IoHandler& ioHandler_;
 };

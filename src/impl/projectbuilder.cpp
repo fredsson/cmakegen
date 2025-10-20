@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <stdlib.h>
+#include <sstream>
 
 namespace {
   bool isSetArgument(const cmake::CmakeFunctionArgument& argument) {
@@ -34,8 +35,12 @@ namespace {
   }
 }
 
-ProjectBuilder::ProjectBuilder(const std::string& buildSystem, const file_utils::IgnoreFile& ignoreFile, IoHandler& ioHandler)
-  : buildSystem_(buildSystem), ignoreFile_(ignoreFile), ioHandler_(ioHandler) {
+ProjectBuilder::ProjectBuilder(
+  const std::string& buildSystem,
+  const bool debug,
+  const file_utils::IgnoreFile& ignoreFile,
+  IoHandler& ioHandler
+) : buildSystem_(buildSystem), debug_(debug), ignoreFile_(ignoreFile), ioHandler_(ioHandler) {
 }
 
 void ProjectBuilder::run() {
@@ -113,14 +118,21 @@ void ProjectBuilder::replaceSetFunction(
 void ProjectBuilder::build() {
   file_utils::createDir("_build");
 
-  // TODO: Handle more build systems here
-  int result;
+  std::stringstream cmakeCommand;
+  cmakeCommand << "cmake";
+  cmakeCommand << " -DCMAKE_BUILD_TYPE=" << (debug_ ? "Debug" : "Release");
   if (buildSystem_ == "ninja") {
-    result = system("cd _build && cmake -GNinja ../ && ninja");
-  } else {
-    result = system("cd _build && cmake ../ && make");
+    cmakeCommand << " -GNinja";
   }
+  cmakeCommand << "../";
 
+  // TODO: Handle more build systems here
+  std::stringstream buildCommand;
+  buildCommand << (buildSystem_ == "ninja" ? "ninja" : "make");
+
+  int result;
+  const std::string command = "cd _build && " + cmakeCommand.str() + " && " + buildCommand.str();
+  result = system(command.c_str());
   if (result != 0) {
     // TODO: log something here
   }

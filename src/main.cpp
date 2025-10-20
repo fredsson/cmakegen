@@ -2,6 +2,8 @@
 #include "cmdoptionparser.h"
 #include "cmakegenerator.h"
 #include "file_utils/ignorefile.h"
+#include "file_utils/fileutils.h"
+#include "file_utils/directory.h"
 #include "iohandler.h"
 #include "cmake/cmakefile.h"
 #include "projectbuilder.h"
@@ -25,9 +27,9 @@ void generateCmakeFiles(const std::string& cmakeVersion, const std::string& cppV
   generator.run();
 }
 
-void updateCmakeFiles(const std::string& buildSystem, const file_utils::IgnoreFile& ignoreFile) {
+void updateCmakeFiles(const std::string& buildSystem, const bool debug, const file_utils::IgnoreFile& ignoreFile) {
   auto ioHandler = StdIoHandler();
-  ProjectBuilder builder(buildSystem, ignoreFile, ioHandler);
+  ProjectBuilder builder(buildSystem, debug, ignoreFile, ioHandler);
   builder.run();
 }
 
@@ -51,10 +53,23 @@ int main(int argc, char *argv[]) {
     );
   } else if (optionParser.hasAnyOption({ "-b", "--build" })) {
     const auto* cmdBuildSystem = optionParser.getOption("--system");
+    const auto debug = optionParser.hasOption("--debug");
     updateCmakeFiles(
       cmdBuildSystem != nullptr ? cmdBuildSystem : "make",
+      debug,
       ignoreFile
     );
+  } else if (optionParser.hasOption("--list-files")) {
+    auto directoryRoot = file_utils::getDirectories(ignoreFile);
+    directoryRoot->forEach([](file_utils::Directory& dir){
+      std::cout << dir.path() << (dir.hasCmakeFile() ? "(cmake)" : "")  << ":\n";
+      for (const auto& include: dir.includeFiles()) {
+        std::cout << "I: " << include << "\n";
+      }
+      for(const auto& src: dir.sourceFiles()) {
+        std::cout << "S: " << src << "\n";
+      }
+    });
   } else {
   }
   return 0;
