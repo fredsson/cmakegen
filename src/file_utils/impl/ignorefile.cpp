@@ -1,6 +1,7 @@
 #include "../ignorefile.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -16,7 +17,7 @@ namespace {
   }
 
   std::vector<std::string> parsePatterns(std::ifstream& stream) {
-    std::vector<std::string> patterns = {"_build"};
+    std::vector<std::string> patterns = {"_build", ".git"};
     for (std::string line; std::getline(stream, line);) {
       if (!line.empty()) {
         patterns.push_back(line);
@@ -30,7 +31,7 @@ IgnoreFile IgnoreFile::load(const std::string& fileName) {
   std::ifstream stream(fileName);
   if (!stream.is_open()) {
     return {
-      std::vector<std::string>{"_build"}
+      std::vector<std::string>{"_build", ".git"}
     };
   }
 
@@ -46,7 +47,7 @@ IgnoreFile::IgnoreFile(std::vector<std::string> patterns)
 bool IgnoreFile::contains(const std::string& path) const {
   return std::any_of(patterns_.begin(), patterns_.end(), [&path](const std::string& pattern) {
     std::vector<std::string> parts = {};
-    split(path, '/', std::back_inserter(parts));
+    split(path, std::filesystem::path::preferred_separator, std::back_inserter(parts));
 
     return std::any_of(parts.begin(), parts.end(), [&pattern](const std::string& pathPart) {
       if (pattern[0] == '*') {
