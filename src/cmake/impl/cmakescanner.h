@@ -1,7 +1,6 @@
 #ifndef CMAKE_CMAKESCANNER_H
 #define CMAKE_CMAKESCANNER_H
 #include <fstream>
-#include <memory>
 #include <string>
 
 namespace cmake {

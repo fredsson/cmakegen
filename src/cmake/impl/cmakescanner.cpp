@@ -1,4 +1,4 @@
-#include "cmakescanner.h"
+#include "./cmakescanner.h"
 
 #include <algorithm>
 #include <functional>
@@ -145,7 +145,7 @@ Token CmakeScanner::getComment() {
 Token CmakeScanner::getArgument(char c) {
   bool quoted = (c == '"');
   const auto result = getAllowedCharacters(file_, c, allowedInArgument);
-  const unsigned int noOfCharactersProcessed = result.processedCharacters.size();
+  const auto noOfCharactersProcessed = (unsigned int)result.processedCharacters.size();
   const auto column = currentColumn_;
 
   lastChar_ = result.nextCharacter;
@@ -161,7 +161,7 @@ Token CmakeScanner::getArgument(char c) {
 
 Token CmakeScanner::getIdentifier(char c) {
   const auto result = getAllowedCharacters(file_, c, allowedInIdentifier);
-  const unsigned int noOfCharactersProcessed = result.processedCharacters.size();
+  const auto noOfCharactersProcessed = (unsigned int)result.processedCharacters.size();
   const auto column = currentColumn_;
 
   lastChar_ = result.nextCharacter;
