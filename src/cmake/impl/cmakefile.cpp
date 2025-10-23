@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <sstream>
 
 namespace cmake {
 
@@ -239,8 +238,8 @@ std::shared_ptr<CmakeFunction> CmakeFile::createReplacementFunction(
 ) {
   unsigned int line = startPosition.line_ + 1;
   std::vector<CmakeFunctionArgument> arguments = {{setArgumentName, startPosition, false}};
-  std::transform(files.begin(), files.end(), std::back_inserter(arguments), [this, &line](const auto& file)->CmakeFunctionArgument {
-    return {"\"" + file_utils::makeRelative(file, path_) + "\"", {line++, 3}, true};
+  std::transform(files.begin(), files.end(), std::back_inserter(arguments), [&line](const auto& file)->CmakeFunctionArgument {
+    return {"\"" + file + "\"", {line++, 3}, true};
   });
 
   return CmakeFunction::create(

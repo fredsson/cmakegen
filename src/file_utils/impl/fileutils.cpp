@@ -46,7 +46,8 @@ std::vector<cmake::CmakeFunctionArgument> DirectoryFiles::availableFileTypeArgum
 std::shared_ptr<cmake::CmakeFunction> DirectoryFiles::createIncludeFilesFunction(const file_utils::Directory* directory) {
   std::vector<cmake::CmakeFunctionArgument> arguments = {{"INCLUDE_FILES"}};
   std::transform(includeFiles.begin(), includeFiles.end(), std::back_inserter(arguments), [&directory](const std::string& file) {
-    return cmake::CmakeFunctionArgument{file_utils::makeRelative(file, directory->path()), true};
+    const auto relativePath = file_utils::makeRelativeWithCmakeSeparator(file, directory->path());
+    return cmake::CmakeFunctionArgument{relativePath, true};
   });
 
   return cmake::CmakeFunction::create("set", arguments);
@@ -55,7 +56,8 @@ std::shared_ptr<cmake::CmakeFunction> DirectoryFiles::createIncludeFilesFunction
 std::shared_ptr<cmake::CmakeFunction> DirectoryFiles::createSourceFilesFunction(const file_utils::Directory* directory) {
   std::vector<cmake::CmakeFunctionArgument> arguments = {{"SRC_FILES"}};
   std::transform(sourceFiles.begin(), sourceFiles.end(), std::back_inserter(arguments), [&directory](const std::string& file) {
-    return cmake::CmakeFunctionArgument{file_utils::makeRelative(file, directory->path()), true};
+    const auto relativePath = file_utils::makeRelativeWithCmakeSeparator(file, directory->path());
+    return cmake::CmakeFunctionArgument{relativePath, true};
   });
 
   return cmake::CmakeFunction::create("set", arguments);
@@ -66,7 +68,16 @@ std::string makeRelative(const std::string& target) {
 }
 
 std::string makeRelative(const std::string& target, const std::string& rootPath) {
+  if (target.size() < rootPath.size()) {
+    return "." + target;
+  }
   return "." + target.substr(rootPath.size());
+}
+
+std::string makeRelativeWithCmakeSeparator(std::string_view target, std::string_view root) {
+  std::string result = makeRelative(target.data(), root.data());
+  std::replace(result.begin(), result.end(), '\\', '/');
+  return result;
 }
 
 std::string directoryName(const std::string& path) {
@@ -117,9 +128,9 @@ std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
       const auto relativePath = std::filesystem::relative(entry.path(), root->path());
 
       if (hasExtension(entry.path(), HEADER_EXTENSIONS)) {
-        parentItr->second->addIncludeFile(relativePath.string());
+        parentItr->second->addIncludeFile(p);
       } else if (hasExtension(entry.path(), SOURCE_EXTENSIONS)) {
-        parentItr->second->addSourceFile(relativePath.string());
+        parentItr->second->addSourceFile(p);
       } else if (p.find("CMakeLists.txt") != std::string::npos) {
         parentItr->second->addCmakeFile();
       }
@@ -143,10 +154,28 @@ std::shared_ptr<Directory> getDirectories(const IgnoreFile& ignoreFile) {
     }
   );
 
-  std::sort(files.includeFiles.begin(), files.includeFiles.end());
-  std::sort(files.sourceFiles.begin(), files.sourceFiles.end());
+  DirectoryFiles relativeFiles;
+  std::transform(
+    files.includeFiles.begin(),
+    files.includeFiles.end(),
+    std::back_inserter(relativeFiles.includeFiles),
+    [&directory](const auto& file){
+      return makeRelativeWithCmakeSeparator(file, directory->path());
+    }
+  );
+  std::transform(
+    files.sourceFiles.begin(),
+    files.sourceFiles.end(),
+    std::back_inserter(relativeFiles.sourceFiles),
+    [&directory](const auto& file){
+      return makeRelativeWithCmakeSeparator(file, directory->path());
+    }
+  );
 
-  return files;
+  std::sort(relativeFiles.includeFiles.begin(), relativeFiles.includeFiles.end());
+  std::sort(relativeFiles.sourceFiles.begin(), relativeFiles.sourceFiles.end());
+
+  return relativeFiles;
 }
 
 }

@@ -124,7 +124,7 @@ void ProjectBuilder::build() {
   if (buildSystem_ == "ninja") {
     cmakeCommand << " -GNinja";
   }
-  cmakeCommand << "../";
+  cmakeCommand << " ../";
 
   // TODO: Handle more build systems here
   std::stringstream buildCommand;
